@@ -58,8 +58,6 @@ for i in range(1, 5):
     # go to next month
     updateDate = AddMonths(updateDate, 1)
     
-    time.sleep(10) # delays for 10 seconds to skip error 'Too Many Requests' from API service
-
 outFile.close()
 
 print "Done success"

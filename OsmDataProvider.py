@@ -27,7 +27,7 @@ def GetOSMData(overpassServerUrl, overpassPage, bbox, strDate):
             print response.status, response.reason
             
             if response.status == 429: #Too Many Requests
-                time.sleep(10) # delays for 10 seconds
+                time.sleep(20) # delays for 20 seconds
                 tryCounter += 1
                 if tryCounter > 5:
                     raise Exception("Can't download data Too Many Requests")
