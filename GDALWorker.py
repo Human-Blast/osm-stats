@@ -14,7 +14,7 @@ def GetQueryBox(shpBoundFilename):
     geomBound = boundFeat.GetGeometryRef()
     env = geomBound.GetEnvelope()
     boundFeat.Destroy()
-    return {"s": str(env[2]), "w": str(env[1]), "n": str(env[3]), "e": str(env[0])}
+    return {"s": str(env[2]), "w": str(env[0]), "n": str(env[3]), "e": str(env[1])}
 
 
 def GetLengths(layer, highwayTypes, boundGeom):

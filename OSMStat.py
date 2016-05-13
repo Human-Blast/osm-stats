@@ -38,9 +38,11 @@ for i in range(1, 5):
     strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
     print "Update time :", strDate
 
+    filename = "source.osm"
+
     # first download OSM data by Overpass_API
     print "Start download OSM data 'Overpass_API' "
-    filename = OsmDataProvider.GetOSMData(overpassServerUrl, overpassPage, bbox, strDate)
+    OsmDataProvider.GetOSMData(filename, overpassServerUrl, overpassPage, bbox, strDate)
 
     print "Start calculate lengths"
     res = GDALWorker.CalculateLengths(filename, highwayTypes, shpBoundFilename)
@@ -51,7 +53,7 @@ for i in range(1, 5):
         outStr = updateDate.strftime("%d %B %Y")
         outStr += "," + key
         outStr += "," + str(value.Count)
-        milesLength = round(value.Length * 0.000621371)# convert meters to milles
+        milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
         outStr += "," + str(milesLength) + "\n"
         outFile.write(outStr)
 

@@ -19,7 +19,7 @@ def GetResponse(overpassServerUrl, overpassPage, bbox, strDate):
         response = conn.getresponse()
         return response
 
-def GetOSMData(overpassServerUrl, overpassPage, bbox, strDate):
+def GetOSMData(filename, overpassServerUrl, overpassPage, bbox, strDate):
         tryCounter = 0
         
         while(True):
@@ -27,7 +27,7 @@ def GetOSMData(overpassServerUrl, overpassPage, bbox, strDate):
             print response.status, response.reason
             
             if response.status == 429: #Too Many Requests
-                time.sleep(20) # delays for 20 seconds
+                time.sleep(70) # delays for 70 seconds
                 tryCounter += 1
                 if tryCounter > 5:
                     raise Exception("Can't download data Too Many Requests")
@@ -39,7 +39,6 @@ def GetOSMData(overpassServerUrl, overpassPage, bbox, strDate):
 
         print "Downloading data..."
 
-        filename = "source.osm"
 
         osmFile = open(filename, "w")
         
