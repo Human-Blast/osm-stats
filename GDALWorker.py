@@ -5,12 +5,32 @@ os.environ["GDAL_DATA"] = ".\GDAL\gdal-data"
 os.environ["GDAL_DRIVER_PATH"] = ".\GDAL\gdalplugins"
 
 from osgeo import ogr
+from osgeo import gdal
 from osgeo import osr
 
 class StaticsticRes:
     Length = 0
     Count = 0
 
+
+# example GDAL error handler function
+def gdal_error_handler(err_class, err_num, err_msg):
+    errtype = {
+            gdal.CE_None:'None',
+            gdal.CE_Debug:'Debug',
+            gdal.CE_Warning:'Warning',
+            gdal.CE_Failure:'Failure',
+            gdal.CE_Fatal:'Fatal'
+    }
+    err_msg = err_msg.replace('\n',' ')
+    err_class = errtype.get(err_class, 'None')
+    print 'Error Number: %s' % (err_num)
+    print 'Error Type: %s' % (err_class)
+    print 'Error Message: %s' % (err_msg)
+
+
+ # install error handler
+gdal.PushErrorHandler(gdal_error_handler)
 
 def GetQueryBox(shpBoundFilename):
     dsBound = ogr.Open( shpBoundFilename )  
@@ -53,7 +73,7 @@ def GetLengths(layer, highwayTypes, boundGeom):
     return res
 
 
-def CalculateLengths(filename, highwayTypes, shpBoundFilename):
+def GetStatistic(filename, highwayTypes, shpBoundFilename):
 
     dsBound = ogr.Open( shpBoundFilename )  
     lyrBound = dsBound.GetLayer()

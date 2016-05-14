@@ -35,6 +35,7 @@ updateDate = datetime.date(2016, 01, 01)
 
 outFile = open("output.csv", "w")
 outFile.write("Date,Name,Count,Length\n")
+outFile.close()
 
 for i in range(1, 5):
     strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -47,10 +48,12 @@ for i in range(1, 5):
     OsmDataProvider.GetOSMData(filename, overpassServerUrl, overpassPage, bbox, strDate)
 
     print "Start calculate lengths"
-    res = GDALWorker.CalculateLengths(filename, highwayTypes, shpBoundFilename)
+    res = GDALWorker.GetStatistic(filename, highwayTypes, shpBoundFilename)
 
     print "Write to CSV..."
 
+    outFile = open("output.csv", "a")
+    
     for key, value in res.iteritems():
         outStr = updateDate.strftime("%d %B %Y")
         outStr += "," + key
@@ -58,10 +61,10 @@ for i in range(1, 5):
         milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
         outStr += "," + str(milesLength) + "\n"
         outFile.write(outStr)
+    
+    outFile.close()
 
     # go to next month
-    updateDate = AddMonths(updateDate, 1)
-    
-outFile.close()
+    updateDate = AddMonths(updateDate, 1)    
 
 print "Done success"
