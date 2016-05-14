@@ -2,6 +2,7 @@
 import httplib
 import urllib
 import time
+import string
 
 def DumpToFile(data):
     return
@@ -49,7 +50,9 @@ def GetOSMData(filename, overpassServerUrl, overpassPage, bbox, strDate):
             if(respData == None or respData == ""):
                 break
             osmFile.write(respData)
+            osmFile.flush();
 
+        osmFile.flush();
         osmFile.close()
 
         return filename

@@ -1,4 +1,10 @@
-﻿from osgeo import ogr
+﻿# Setup GDAL enviroment
+import os
+os.environ["PATH"] = os.environ["PATH"] + ";GDAL;"
+os.environ["GDAL_DATA"] = ".\GDAL\gdal-data"
+os.environ["GDAL_DRIVER_PATH"] = ".\GDAL\gdalplugins"
+
+from osgeo import ogr
 from osgeo import osr
 
 class StaticsticRes:
@@ -8,7 +14,8 @@ class StaticsticRes:
 
 def GetQueryBox(shpBoundFilename):
     dsBound = ogr.Open( shpBoundFilename )  
-    lyrBound = dsBound.GetLayer(0)
+
+    lyrBound = dsBound.GetLayer()
     geomBound = None
     boundFeat = lyrBound.GetNextFeature()
     geomBound = boundFeat.GetGeometryRef()
@@ -49,7 +56,7 @@ def GetLengths(layer, highwayTypes, boundGeom):
 def CalculateLengths(filename, highwayTypes, shpBoundFilename):
 
     dsBound = ogr.Open( shpBoundFilename )  
-    lyrBound = dsBound.GetLayer(0)
+    lyrBound = dsBound.GetLayer()
     geomBound = None
     boundFeat = lyrBound.GetNextFeature()
     geomBound = boundFeat.GetGeometryRef()

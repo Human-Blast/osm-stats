@@ -10,7 +10,7 @@ import GDALWorker
 overpassServerUrl = "overpass-api.de"
 overpassPage = "/api/interpreter"
 # boundary of Haiti in shape format
-shpBoundFilename = "CountriesBounds/HTI_adm0.shp"
+shpBoundFilename = "./CountriesBounds/HTI_adm0.shp"
 highwayTypes = ["motorway", "motorway_link", "secondary", 
                 "secondary_link", "primary", "primary_link", 
                 "tertiary", "residential", "unclassified",
@@ -19,7 +19,9 @@ highwayTypes = ["motorway", "motorway_link", "secondary",
                 ]
 
 bbox = GDALWorker.GetQueryBox(shpBoundFilename)
-#bbox = {"s": "17.8951", "w": "-72.2948", "n": "18.2313", "e": "-70.9827"}#to test only
+print "Query box:", bbox
+#to test only:
+#bbox = {"s": "17.8951", "w": "-72.2948", "n": "18.2313", "e": "-70.9827"}
 
 def AddMonths(sourcedate,months):
          month = sourcedate.month - 1 + months
