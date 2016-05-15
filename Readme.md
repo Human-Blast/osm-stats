@@ -6,7 +6,7 @@ http://wiki.openstreetmap.org/wiki/Overpass_API/versions
 
 http://wiki.openstreetmap.org/wiki/Overpass_API
 
-To apply spatial filter by country script use predefined polygon fomr shapefile in folder "CountriesBounds".
+To apply spatial filter by country script use predefined polygon from shapefile in folder "CountriesBounds".
 
 To run script on Windows platform you will need run "run.bat" Output wil be in the file "output.csv".
 
