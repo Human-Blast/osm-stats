@@ -11,12 +11,14 @@ overpassServerUrl = "overpass-api.de"
 overpassPage = "/api/interpreter"
 # boundary of Haiti in shape format
 shpBoundFilename = "./CountriesBounds/HTI_adm0.shp"
-highwayTypes = ["motorway", "motorway_link", "secondary", 
+highwayTypes = ["motorway", "secondary", 
                 "secondary_link", "primary", "primary_link", 
                 "tertiary", "residential", "unclassified",
                 "road", "path", "service",
                 "living_street", "track", "raceway"
                 ]
+updateDate = datetime.date(2015, 05, 01)
+countOfMonth = 12
 
 bbox = GDALWorker.GetQueryBox(shpBoundFilename)
 print "Query box:", bbox
@@ -31,13 +33,12 @@ def AddMonths(sourcedate,months):
          return datetime.date(year,month,day)
 
 
-updateDate = datetime.date(2016, 01, 01)
 
 outFile = open("output.csv", "w")
 outFile.write("Date,Name,Count,Length\n")
 outFile.close()
 
-for i in range(1, 5):
+for i in range(0, countOfMonth):
     strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
     print "Update time :", strDate
 
@@ -47,7 +48,7 @@ for i in range(1, 5):
     print "Start download OSM data 'Overpass_API' "
     OsmDataProvider.GetOSMData(filename, overpassServerUrl, overpassPage, bbox, strDate)
 
-    print "Start calculate lengths"
+    print "Start calculate statistic..."
     res = GDALWorker.GetStatistic(filename, highwayTypes, shpBoundFilename)
 
     print "Write to CSV..."
