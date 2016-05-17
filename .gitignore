@@ -1,3 +1,7 @@
 /output.csv
 /source.osm
 /*.suo
+/Lib/encodings/*.pyc
+/Lib/encodings/unicode_escape.pyc
+/*.pyc
+/123.txt

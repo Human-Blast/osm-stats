@@ -1,17 +1,29 @@
-﻿# Setup GDAL enviroment
-import os
+﻿import os
+import sys
+import codecs
+import time
+import thread
+import threading
+import StringIO
+import subprocess
 
 if os.name == "nt":
     # Setup windows enviroment
     curAbsPath = os.path.dirname(os.path.abspath(__file__))
     gdalPath = curAbsPath + "\Win32\GDAL"
-    os.environ["PATH"] = os.environ["PATH"] + ";" + gdalPath + ";"
+    pythonPath = curAbsPath + "\Win32\Scripts"
+    os.environ["PATH"] = os.environ["PATH"] + ";" + gdalPath + ";" + pythonPath
     os.environ["GDAL_DATA"] = gdalPath + "\gdal-data"
     os.environ["GDAL_DRIVER_PATH"] = gdalPath + "\gdalplugins"
 
 from osgeo import ogr
 from osgeo import gdal
 from osgeo import osr
+
+# print OGR drivers
+#countDriver = ogr.GetDriverCount()
+#for i in range(0, countDriver):
+#    print ogr.GetDriver(i).GetName()
 
 class StaticsticRes:
     Length = 0
@@ -38,7 +50,7 @@ def gdal_error_handler(err_class, err_num, err_msg):
 gdal.PushErrorHandler(gdal_error_handler)
 
 def GetQueryBox(shpBoundFilename):
-    dsBound = ogr.Open( shpBoundFilename )  
+    dsBound = ogr.Open(shpBoundFilename)  
 
     lyrBound = dsBound.GetLayer()
     geomBound = None
@@ -77,19 +89,25 @@ def GetLengths(layer, highwayTypes, boundGeom):
                 res[highwayVal].Count += 1
     return res
 
+def keep_running():
+    return True
+
+def run_web_service():
+    os.system('python WebService.py')    
 
 def GetStatistic(filename, highwayTypes, shpBoundFilename):
 
-    dsBound = ogr.Open( shpBoundFilename )  
+    dsBound = ogr.Open(shpBoundFilename)  
     lyrBound = dsBound.GetLayer()
     geomBound = None
     boundFeat = lyrBound.GetNextFeature()
     geomBound = boundFeat.GetGeometryRef()
+    
+    ds = ogr.Open( filename )
 
-    ds = ogr.Open( filename )    
     if ds is None:
          "ERROR: can't open osm file"
-    
+
     for idx in range(0, ds.GetLayerCount()):
         lyr = ds.GetLayer(idx)
         geomType = lyr.GetGeomType()

@@ -5,20 +5,26 @@ import calendar
 import time
 import OsmDataProvider
 import GDALWorker
+import argparse
 
-# application parameters
-overpassServerUrl = "overpass-api.de"
-overpassPage = "/api/interpreter"
+#
+# Application parameters:
+#
+
+# Parameters of date region
+updateDate = datetime.date(2012, 05, 01)
+countOfMonth = 12*4
+
 # boundary of Haiti in shape format
-shpBoundFilename = "./CountriesBounds/HTI_adm0.shp"
+shpBoundFilename = "./CountriesBounds/GRL_adm0.shp"
 highwayTypes = ["motorway", "secondary", 
                 "secondary_link", "primary", "primary_link", 
                 "tertiary", "residential", "unclassified",
                 "road", "path", "service",
                 "living_street", "track", "raceway"
                 ]
-updateDate = datetime.date(2015, 05, 01)
-countOfMonth = 12
+
+# End of applications parameters
 
 bbox = GDALWorker.GetQueryBox(shpBoundFilename)
 print "Query box:", bbox
@@ -33,20 +39,42 @@ def AddMonths(sourcedate,months):
          return datetime.date(year,month,day)
 
 
+parser = argparse.ArgumentParser(prog='osm-stat')
+parser.add_argument("-inputfile")
+parser.add_argument("-url")
+parser.add_argument("-overpass")
+args = parser.parse_args(sys.argv[1:])
 
 outFile = open("output.csv", "w")
 outFile.write("Date,Name,Count,Length\n")
 outFile.close()
 
+if args.overpass != "true":
+    countOfMonth = 1 #no iterate, single pass
+
 for i in range(0, countOfMonth):
     strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
     print "Update time :", strDate
 
-    filename = "source.osm"
+    filename = None
 
-    # first download OSM data by Overpass_API
-    print "Start download OSM data 'Overpass_API' "
-    OsmDataProvider.GetOSMData(filename, overpassServerUrl, overpassPage, bbox, strDate)
+    #http://download.gisgraphy.com/openstreetmap/pbf/AD.tar.bz2
+    #http://download.geofabrik.de/central-america/haiti-and-domrep-140101.osm.pbf
+    args.url = "http://localhost:8000/source.osm"
+
+    # first download OSM data 
+    if args.overpass == "true":
+        # download by Overpass_API
+        print "Start download OSM data 'Overpass_API' "
+        filename = OsmDataProvider.GetOverpassOSMData(bbox, strDate)
+    elif args.url != None:
+        print "Start download OSM data 'url' " + args.url
+        filename = OsmDataProvider.GetUrlOSMData(bbox, args.url)
+    elif args.inputfile != None:
+        print "Parse OSM data 'inputfile' " + args.inputfile
+        filename = OsmDataProvider.GetFileOSMData(bbox, args.inputfile)
+    else:
+        raise "not supported"
 
     print "Start calculate statistic..."
     res = GDALWorker.GetStatistic(filename, highwayTypes, shpBoundFilename)
