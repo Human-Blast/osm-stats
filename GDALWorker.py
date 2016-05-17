@@ -1,8 +1,13 @@
 ﻿# Setup GDAL enviroment
 import os
-os.environ["PATH"] = os.environ["PATH"] + ";GDAL;"
-os.environ["GDAL_DATA"] = ".\GDAL\gdal-data"
-os.environ["GDAL_DRIVER_PATH"] = ".\GDAL\gdalplugins"
+
+if os.name == "nt":
+    # Setup windows enviroment
+    curAbsPath = os.path.dirname(os.path.abspath(__file__))
+    gdalPath = curAbsPath + "\Win32\GDAL"
+    os.environ["PATH"] = os.environ["PATH"] + ";" + gdalPath + ";"
+    os.environ["GDAL_DATA"] = gdalPath + "\gdal-data"
+    os.environ["GDAL_DRIVER_PATH"] = gdalPath + "\gdalplugins"
 
 from osgeo import ogr
 from osgeo import gdal

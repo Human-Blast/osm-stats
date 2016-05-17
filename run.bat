@@ -1,5 +1,3 @@
-set PYTHONHOME "./"
-set PYTHONPATH ""
-.\Scripts\python.exe OSMStat.py
+.\Win32\Scripts\python.exe OSMStat.py
 set /p DUMMY=Hit ENTER to continue...
 
