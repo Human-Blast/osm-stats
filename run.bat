@@ -1,3 +1,3 @@
-.\Win32\Scripts\python.exe OSMStat.py
+.\Win32\Scripts\python.exe OSMStat.py -inputfile "H:/planet-120912.osm.bz2"
 set /p DUMMY=Hit ENTER to continue...
 
