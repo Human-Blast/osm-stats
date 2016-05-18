@@ -5,3 +5,4 @@
 /Lib/encodings/unicode_escape.pyc
 /*.pyc
 /123.txt
+/Win32/Lib/distutils/command/*.pyc

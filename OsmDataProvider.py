@@ -162,7 +162,18 @@ def GetUrlOSMData(bbox, url):
                     respData = decompressor.decompress(respData)
                     if respData == None or respData == "":
                         continue
+                    unusedData = decompressor.unused_data
+                    while unusedData != "" and unusedData != None:
+                        decompressor = bz2.BZ2Decompressor()                            
+                        tmpData = decompressor.decompress(unusedData)
+                        if tmpData != None and tmpData != "":
+                            fileData += tmpData
+                        unusedData = decompressor.unused_data
+
                 ogr2ogrPipe.stdin.write(respData)
+
+
+
             except:
                 print "Unexpected error:", sys.exc_info()[0]
                 raise
@@ -214,6 +225,15 @@ def GetFileOSMData(bbox, filename):
                         fileData = decompressor.decompress(fileData)
                         if fileData == None or fileData == "":
                             continue
+                        
+                        unusedData = decompressor.unused_data
+                        while unusedData != "" and unusedData != None:
+                            decompressor = bz2.BZ2Decompressor()                            
+                            tmpData = decompressor.decompress(unusedData)
+                            if tmpData != None and tmpData != "":
+                                fileData += tmpData
+                            unusedData = decompressor.unused_data
+
                     ogr2ogrPipe.stdin.write(fileData)
                 except:
                     print "Unexpected error:", sys.exc_info()[0]

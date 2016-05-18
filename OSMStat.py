@@ -102,6 +102,11 @@ if args.overpass == "true":
 elif args.inputfile != None:
     strDate = OSMDateInfo.GetDateFromFile(args.inputfile)
     RunSinlge(strDate)
+elif args.url != None:
+    #strDate = OSMDateInfo.GetDateFromFile(args.inputfile)
+    strDate = "123123"
+    RunSinlge(strDate)
+
 else:
     raise "not supported"
 

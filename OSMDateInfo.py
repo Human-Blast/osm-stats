@@ -30,8 +30,17 @@ def GetDateFromBZ2(filename):
             fpW.write(fileData)    
 
     for event, elem in etree.iterparse("temp.osm", events=('start', 'end')):
+        
+        if elem.tag == "osm":
+            date = elem.attrib["timestamp"]
+            if date != "":
+                return date
+
         if elem.tag == "meta":
-            return elem.attrib["osm_base"]
+            date = elem.attrib["osm_base"]
+            if date != "":
+                return date
+
         counter += 1
         if counter > 100:
             break
