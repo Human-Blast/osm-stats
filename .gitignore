@@ -6,3 +6,5 @@
 /*.pyc
 /123.txt
 /Win32/Lib/distutils/command/*.pyc
+/Win32/Lib/distutils/*.pyc
+/Win32/Lib/email/*.pyc

@@ -158,10 +158,16 @@ def GetUrlOSMData(bbox, url):
             if(respData == None or respData == ""):
                 break
             try:
+                targetData = ""
                 if isNeedDecompress:
                     while(True):
                         try:
-                            respData = decompressor.decompress(respData)
+                            targetData += decompressor.decompress(respData)
+                            unusedData = decompressor.unused_data
+                            if unusedData != "" and unusedData != None:
+                                decompressor = bz2.BZ2Decompressor()
+                                respData = unusedData
+                                continue
                             break
                         except EOFError:
                             unusedData = decompressor.unused_data
@@ -169,13 +175,10 @@ def GetUrlOSMData(bbox, url):
                             if unusedData != "" and unusedData != None:
                                 respData = unusedData + respData
 
-                    if respData == None or respData == "":
-                        continue
+                if targetData == None or targetData == "":
+                    continue
 
-                ogr2ogrPipe.stdin.write(respData)
-
-
-
+                ogr2ogrPipe.stdin.write(targetData)
             except:
                 print "Unexpected error:", sys.exc_info()[0]
                 raise
