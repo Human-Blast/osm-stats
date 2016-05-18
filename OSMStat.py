@@ -3,20 +3,24 @@ import httplib
 import datetime
 import calendar
 import time
+import argparse
 import OsmDataProvider
 import GDALWorker
-import argparse
+import OSMDateInfo
+
 
 #
 # Application parameters:
 #
 
 # Parameters of date region
-updateDate = datetime.date(2012, 05, 01)
-countOfMonth = 12*4
+updateDate = datetime.date(2015, 05, 01)
+countOfMonth = 12
 
-# boundary of Haiti in shape format
-shpBoundFilename = "./CountriesBounds/GRL_adm0.shp"
+# boundary of countries in shape format
+shpBoundFilename = "./CountriesBounds/countries.shp"
+countryName = "Greenland"
+
 highwayTypes = ["motorway", "secondary", 
                 "secondary_link", "primary", "primary_link", 
                 "tertiary", "residential", "unclassified",
@@ -26,7 +30,7 @@ highwayTypes = ["motorway", "secondary",
 
 # End of applications parameters
 
-bbox = GDALWorker.GetQueryBox(shpBoundFilename)
+bbox = GDALWorker.GetQueryBox(shpBoundFilename, countryName)
 print "Query box:", bbox
 #to test only:
 #bbox = {"s": "17.8951", "w": "-72.2948", "n": "18.2313", "e": "-70.9827"}
@@ -38,46 +42,34 @@ def AddMonths(sourcedate,months):
          day = min(sourcedate.day,calendar.monthrange(year,month)[1])
          return datetime.date(year,month,day)
 
-
 parser = argparse.ArgumentParser(prog='osm-stat')
 parser.add_argument("-inputfile")
 parser.add_argument("-url")
 parser.add_argument("-overpass")
 args = parser.parse_args(sys.argv[1:])
 
-outFile = open("output.csv", "w")
-outFile.write("Date,Name,Count,Length\n")
-outFile.close()
 
-if args.overpass != "true":
-    countOfMonth = 1 #no iterate, single pass
-
-for i in range(0, countOfMonth):
-    strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
-    print "Update time :", strDate
-
-    filename = None
-
-    #http://download.gisgraphy.com/openstreetmap/pbf/AD.tar.bz2
-    #http://download.geofabrik.de/central-america/haiti-and-domrep-140101.osm.pbf
-    args.url = "http://localhost:8000/source.osm"
+def RunSinlge(strDate):
+    filenames = []
 
     # first download OSM data 
     if args.overpass == "true":
         # download by Overpass_API
         print "Start download OSM data 'Overpass_API' "
-        filename = OsmDataProvider.GetOverpassOSMData(bbox, strDate)
+        filenames = OsmDataProvider.GetOverpassOSMData(bbox, strDate)
     elif args.url != None:
         print "Start download OSM data 'url' " + args.url
-        filename = OsmDataProvider.GetUrlOSMData(bbox, args.url)
+        fName = OsmDataProvider.GetUrlOSMData(bbox, args.url)
+        filenames.append(fName)
     elif args.inputfile != None:
         print "Parse OSM data 'inputfile' " + args.inputfile
-        filename = OsmDataProvider.GetFileOSMData(bbox, args.inputfile)
+        fName = OsmDataProvider.GetFileOSMData(bbox, args.inputfile)
+        filenames.append(fName)
     else:
         raise "not supported"
 
     print "Start calculate statistic..."
-    res = GDALWorker.GetStatistic(filename, highwayTypes, shpBoundFilename)
+    res = GDALWorker.GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName)
 
     print "Write to CSV..."
 
@@ -91,9 +83,30 @@ for i in range(0, countOfMonth):
         outStr += "," + str(milesLength) + "\n"
         outFile.write(outStr)
     
-    outFile.close()
+    
 
-    # go to next month
-    updateDate = AddMonths(updateDate, 1)    
+outFile = open("output.csv", "w")
+outFile.write("Date,Name,Count,Length\n")
+outFile.close()
+
+
+if args.overpass == "true":
+    for i in range(0, countOfMonth):
+        strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
+        print "Update time :", strDate
+
+        RunSinlge(strDate)
+
+        # go to next month
+        updateDate = AddMonths(updateDate, 1)    
+elif args.inputfile != None:
+    strDate = OSMDateInfo.GetDateFromFile(args.inputfile)
+    RunSinlge(strDate)
+else:
+    raise "not supported"
+
+
+outFile.close()
+
 
 print "Done success"

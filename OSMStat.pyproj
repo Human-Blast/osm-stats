@@ -33,6 +33,9 @@
     <Compile Include="OsmDataProvider.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="OSMDateInfo.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="OSMStat.py" />
   </ItemGroup>
   <ItemGroup>

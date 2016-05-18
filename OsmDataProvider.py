@@ -1,4 +1,4 @@
-﻿import sys
+﻿import sys  
 import os
 import httplib
 import urllib
@@ -19,6 +19,7 @@ overpassPage = "/api/interpreter"
 
 def GetResponseOverpass(overpassServerUrl, overpassPage, bbox, strDate):
         # specify we're sending parameters that are url encoded
+        # he order of values in the bounding box (51.249,7.148,51.251,7.152) is minimum latitude, minimum longitude, maximum latitude, maximum longitude (or South-West-North-East).
         boxStr = bbox["s"] + "," + bbox["w"] + "," + bbox["n"] + "," + bbox["e"]
         data = "[date:\"" + strDate + "\"];"
         data += "(node(" + boxStr + ");way(" + boxStr + "););out;" 
@@ -31,7 +32,38 @@ def GetResponseOverpass(overpassServerUrl, overpassPage, bbox, strDate):
         return response
 
 def GetOverpassOSMData(bbox, strDate):
-        filename = "source.osm"
+    s = float(bbox["s"])
+    n = float(bbox["n"])
+    w = float(bbox["w"])
+    e = float(bbox["e"])
+    height = abs(s - n)
+    width = abs(w - e)
+    if max(height, width) < 3:
+        fName = "source.osm"
+        GetOverpassOSMDataSingle(fName, bbox, strDate)
+        return [fName]
+    else:
+        count = int(round(max(height, width) / 4))
+        stepX = (e - w) / count
+        stepY = (n - s) / count
+        x = w
+        y = s
+        outFNames = []
+        for i  in range(0, count):
+            newBbox = { "s" : str(y), "n": str(y + stepY), "w" : str(x), "e" : str(x + stepX)  }
+            fName = "source" + str(i) + ".osm"
+            try:
+                GetOverpassOSMDataSingle(fName, newBbox, strDate)  
+                outFNames.append(fName)
+            except:
+                print "Warning error in coordinate " + str(x) + "," + str(y)
+
+            x += stepX      
+            y += stepY
+        return outFNames
+
+
+def GetOverpassOSMDataSingle(filename, bbox, strDate):
 
         tryCounter = 0
         
@@ -85,7 +117,6 @@ def GetUrlOSMData(bbox, url):
         serverUrl = '{uri.netloc}'.format(uri=parsed_uri)
         page = '{uri.path}'.format(uri=parsed_uri)
 
-
         #-spat xmin ymin xmax ymax
         ogr2ogrPipe = subprocess.Popen(['ogr2ogr', "-f", "ESRI Shapefile", outSHPFolder, "/vsistdin/", 
              "-overwrite", "-skipfailures",
@@ -121,7 +152,7 @@ def GetUrlOSMData(bbox, url):
         print "Downloading data..."
 
         fileLen = response.length
-        chunckSize = 200000
+        chunckSize = 1000000
         while(True):
             respData = response.read(chunckSize)
             if(respData == None or respData == ""):
@@ -142,8 +173,8 @@ def GetUrlOSMData(bbox, url):
         return outputfile
 
 def GetFileOSMData(bbox, filename):
-        outputfile = "source.osm"
-        
+        outSHPFolder = "outshp"
+        outputfile = "./" + outSHPFolder + "/lines.shp"
         if os.path.isfile(outputfile):
             os.remove(outputfile) 
 
@@ -152,12 +183,12 @@ def GetFileOSMData(bbox, filename):
         xmax = bbox["e"]
         ymax = bbox["n"]
         
-        fname, file_extension = os.path.splitext(page)
+        fname, file_extension = os.path.splitext(filename)
         isNeedDecompress = False
         if file_extension == ".bz2":
             isNeedDecompress = True
-        else:
-            return filename # if file not compreses no action
+        #else:
+        #    return filename # if file not compress no action
 
         #-spat xmin ymin xmax ymax
         ogr2ogrPipe = subprocess.Popen(['ogr2ogr', "-f", "ESRI Shapefile", outSHPFolder, "/vsistdin/", 
@@ -170,10 +201,10 @@ def GetFileOSMData(bbox, filename):
 
         tryCounter = 0
      
-        print "Parsing data..."
+        print "Extract data..."
 
-        chunckSize = 200000
-        with open(filename) as fp:
+        chunkSize = 200000
+        with open(filename, "rb") as fp:
             while(True):
                 fileData = fp.read(chunkSize)
                 if(fileData == None or fileData == ""):

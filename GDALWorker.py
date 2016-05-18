@@ -49,22 +49,22 @@ def gdal_error_handler(err_class, err_num, err_msg):
  # install error handler
 gdal.PushErrorHandler(gdal_error_handler)
 
-def GetQueryBox(shpBoundFilename):
+def GetQueryBox(shpBoundFilename, countryName):
     dsBound = ogr.Open(shpBoundFilename)  
-
     lyrBound = dsBound.GetLayer()
-    geomBound = None
-    boundFeat = lyrBound.GetNextFeature()
-    geomBound = boundFeat.GetGeometryRef()
-    env = geomBound.GetEnvelope()
-    boundFeat.Destroy()
-    return {"s": str(env[2]), "w": str(env[0]), "n": str(env[3]), "e": str(env[1])}
+    env = None
+    for feature in lyrBound:
+        # get the input geometry
+        geom = feature.GetGeometryRef()
+        name = feature.GetField("NAME")
+        if name == countryName:
+            env = geom.GetEnvelope()
+            break            
+
+    return {"w": str(env[0]), "e": str(env[1]), "s": str(env[2]), "n": str(env[3])}
 
 
-def GetLengths(layer, highwayTypes, boundGeom):
-    res = {}
-    for hType in highwayTypes:
-        res[hType] = StaticsticRes()
+def GetLengths(res, layer, highwayTypes, boundGeom):
 
     source = layer.GetSpatialRef()
     #print source.ExportToWkt()
@@ -95,24 +95,35 @@ def keep_running():
 def run_web_service():
     os.system('python WebService.py')    
 
-def GetStatistic(filename, highwayTypes, shpBoundFilename):
+def GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName):
 
     dsBound = ogr.Open(shpBoundFilename)  
     lyrBound = dsBound.GetLayer()
     geomBound = None
-    boundFeat = lyrBound.GetNextFeature()
-    geomBound = boundFeat.GetGeometryRef()
+    for feature in lyrBound:
+        # get the input geometry
+        geom = feature.GetGeometryRef()
+        name = feature.GetField("NAME")
+        if name == countryName:
+            geomBound = geom
+            break            
     
-    ds = ogr.Open( filename )
+    res = {}
+    for hType in highwayTypes:
+        res[hType] = StaticsticRes()
 
-    if ds is None:
-         "ERROR: can't open osm file"
+    for filename in filenames:
 
-    for idx in range(0, ds.GetLayerCount()):
-        lyr = ds.GetLayer(idx)
-        geomType = lyr.GetGeomType()
-        if geomType == 2:
-            return GetLengths(lyr, highwayTypes, geomBound)
-            break
+        ds = ogr.Open( filename )
 
-    return None
+        if ds is None:
+             "ERROR: can't open osm file"
+
+        for idx in range(0, ds.GetLayerCount()):
+            lyr = ds.GetLayer(idx)
+            geomType = lyr.GetGeomType()
+            if geomType == 2:
+                GetLengths(res, lyr, highwayTypes, geomBound)
+                break
+
+    return res
