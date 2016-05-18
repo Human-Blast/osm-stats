@@ -234,7 +234,7 @@ def GetFileOSMData(bbox, filename):
                 progressLenSumm += chunkSize / 1048576.0
                 progressLen += chunkSize / 1048576.0
                 if progressLen > 1024:
-                    print "Processing MB: " + progressLenSumm
+                    print "Processing MB: " + str(progressLenSumm)
                     progressLen = 0.0
 
                 try:
