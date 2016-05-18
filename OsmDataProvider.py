@@ -159,16 +159,18 @@ def GetUrlOSMData(bbox, url):
                 break
             try:
                 if isNeedDecompress:
-                    respData = decompressor.decompress(respData)
+                    while(True):
+                        try:
+                            respData = decompressor.decompress(respData)
+                            break
+                        except EOFError:
+                            unusedData = decompressor.unused_data
+                            decompressor = bz2.BZ2Decompressor()
+                            if unusedData != "" and unusedData != None:
+                                respData = unusedData + respData
+
                     if respData == None or respData == "":
                         continue
-                    unusedData = decompressor.unused_data
-                    while unusedData != "" and unusedData != None:
-                        decompressor = bz2.BZ2Decompressor()                            
-                        tmpData = decompressor.decompress(unusedData)
-                        if tmpData != None and tmpData != "":
-                            fileData += tmpData
-                        unusedData = decompressor.unused_data
 
                 ogr2ogrPipe.stdin.write(respData)
 
@@ -182,6 +184,8 @@ def GetUrlOSMData(bbox, url):
         ogr2ogrPipe.wait()
 
         return outputfile
+
+
 
 def GetFileOSMData(bbox, filename):
         outSHPFolder = "outshp"
@@ -214,27 +218,44 @@ def GetFileOSMData(bbox, filename):
      
         print "Extract data..."
 
-        chunkSize = 200000
+        progressLen = 0.0
+        progressLenSumm = 0.0
+
+        chunkSize = 2000000
         with open(filename, "rb") as fp:
             while(True):
                 fileData = fp.read(chunkSize)
                 if(fileData == None or fileData == ""):
                     break
-                try:
-                    if isNeedDecompress:
-                        fileData = decompressor.decompress(fileData)
-                        if fileData == None or fileData == "":
-                            continue
-                        
-                        unusedData = decompressor.unused_data
-                        while unusedData != "" and unusedData != None:
-                            decompressor = bz2.BZ2Decompressor()                            
-                            tmpData = decompressor.decompress(unusedData)
-                            if tmpData != None and tmpData != "":
-                                fileData += tmpData
-                            unusedData = decompressor.unused_data
 
-                    ogr2ogrPipe.stdin.write(fileData)
+                progressLenSumm += chunkSize / 1048576.0
+                progressLen += chunkSize / 1048576.0
+                if progressLen > 1024:
+                    print "Processing MB: " + progressLenSumm
+                    progressLen = 0.0
+
+                try:
+                    targetData = ""
+                    if isNeedDecompress:
+                         while(True):
+                            try:
+                                targetData += decompressor.decompress(fileData)
+                                unusedData = decompressor.unused_data
+                                if unusedData != "" and unusedData != None:
+                                   decompressor = bz2.BZ2Decompressor()
+                                   fileData = unusedData
+                                   continue
+                                break
+                            except EOFError:
+                                unusedData = decompressor.unused_data
+                                decompressor = bz2.BZ2Decompressor()
+                                if unusedData != "" and unusedData != None:
+                                    fileData = unusedData + fileData
+
+                    if targetData == None or targetData == "":
+                        continue
+
+                    ogr2ogrPipe.stdin.write(targetData)
                 except:
                     print "Unexpected error:", sys.exc_info()[0]
                     raise
