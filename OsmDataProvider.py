@@ -151,12 +151,22 @@ def GetUrlOSMData(bbox, url):
 
         print "Downloading data..."
 
+        progressLen = 0.0
+        progressLenSumm = 0.0
+
         fileLen = response.length
-        chunckSize = 1000000
+        chunkSize = 1000000
         while(True):
-            respData = response.read(chunckSize)
+            respData = response.read(chunkSize)
             if(respData == None or respData == ""):
                 break
+
+            progressLenSumm += chunkSize / 1048576.0
+            progressLen += chunkSize / 1048576.0
+            if progressLen > 512:
+                print "Processing MB: " + str(progressLenSumm)
+                progressLen = 0.0
+
             try:
                 targetData = ""
                 if isNeedDecompress:
@@ -233,7 +243,7 @@ def GetFileOSMData(bbox, filename):
 
                 progressLenSumm += chunkSize / 1048576.0
                 progressLen += chunkSize / 1048576.0
-                if progressLen > 1024:
+                if progressLen > 512:
                     print "Processing MB: " + str(progressLenSumm)
                     progressLen = 0.0
 

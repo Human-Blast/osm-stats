@@ -76,7 +76,7 @@ def RunSinlge(strDate):
     outFile = open("output.csv", "a")
     
     for key, value in res.iteritems():
-        outStr = updateDate.strftime("%d %B %Y")
+        outStr = strDate
         outStr += "," + key
         outStr += "," + str(value.Count)
         milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
@@ -103,12 +103,11 @@ elif args.inputfile != None:
     strDate = OSMDateInfo.GetDateFromFile(args.inputfile)
     RunSinlge(strDate)
 elif args.url != None:
-    #strDate = OSMDateInfo.GetDateFromFile(args.inputfile)
-    strDate = "123123"
+    strDate = OSMDateInfo.GetDateFromUrl(args.url)
     RunSinlge(strDate)
 
 else:
-    raise "not supported"
+    raise "not supported arguments"
 
 
 outFile.close()
