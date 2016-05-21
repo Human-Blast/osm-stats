@@ -7,17 +7,42 @@ You can configure desired highway types in list "highwayTypes" in file "OSMStat.
 
 ## Options
 
+-history : parse full-history OSM file
+
+Example:  
+
+```sh
+python2.7 OSMStat.py -history "history-latest.osm.pbf" 
+```
+
+```sh
+python2.7 OSMStat.py -history "http://planet.openstreetmap.org/pbf/full-history/history-latest.osm.pbf"
+```
+
 -inputfile : parse OSM planet file
 
-Example:  -inputfile "planet.osm.bz2" 
+Example:  
+
+```sh
+python2.7 OSMStat.py -inputfile "planet.osm.bz2" 
+```
 
 -url : download and parse OSM file
 
-Example: -url "http://download.gisgraphy.com/openstreetmap/pbf/AD.tar.bz2"
+
+Example:
+
+```sh
+python2.7 OSMStat.py -url "http://download.gisgraphy.com/openstreetmap/pbf/AD.tar.bz2"
+```
 
 -overpass: use OverpassAPI to download data  This API allowed get "Historic dumps" of OSM data. More info about  "Overpass_API"
 
-Example:  -overpass true
+Example:  
+
+```sh
+python2.7 OSMStat.py -overpass true
+```
 
 ## Linux 
 
