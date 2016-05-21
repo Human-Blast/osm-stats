@@ -57,7 +57,7 @@ def GetQueryBox(shpBoundFilename, countryName):
         # get the input geometry
         geom = feature.GetGeometryRef()
         name = feature.GetField("NAME")
-        if name == countryName:
+        if name.lower() == countryName.lower():
             env = geom.GetEnvelope()
             break            
 
@@ -104,7 +104,7 @@ def GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName):
         # get the input geometry
         geom = feature.GetGeometryRef()
         name = feature.GetField("NAME")
-        if name == countryName:
+        if name.lower() == countryName.lower():
             geomBound = geom
             break            
     

@@ -7,6 +7,7 @@ import bz2
 import os
 from urlparse import urlparse
 
+
 def GetDateFromXMLOSM(filename):
     counter = 0
     for event, elem in etree.iterparse(filename, events=('start', 'end')):

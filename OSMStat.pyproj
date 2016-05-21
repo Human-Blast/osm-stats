@@ -16,7 +16,7 @@
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <Environment>
     </Environment>
-    <CommandLineArguments>-url "http://ftp.heanet.ie/mirrors/openstreetmap.org/planet/2012/planet-120912.osm.bz2"</CommandLineArguments>
+    <CommandLineArguments>-history "haiti.pbf"</CommandLineArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,10 +30,14 @@
     <Compile Include="GDALWorker.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="OSMConverter.py" />
     <Compile Include="OsmDataProvider.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="OSMDateInfo.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="OSMHistory.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="OSMStat.py" />

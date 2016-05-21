@@ -7,6 +7,8 @@ import argparse
 import OsmDataProvider
 import GDALWorker
 import OSMDateInfo
+import OSMHistory
+import OSMConverter
 
 
 #
@@ -14,12 +16,12 @@ import OSMDateInfo
 #
 
 # Parameters of date region
-updateDate = datetime.date(2015, 05, 01)
-countOfMonth = 12
+updateDate = datetime.date(2012, 9, 12)#2012-09-12
+countOfMonth = 1
 
 # boundary of countries in shape format
 shpBoundFilename = "./CountriesBounds/countries.shp"
-countryName = "Greenland"
+countryName = "Haiti"
 
 highwayTypes = ["motorway", "secondary", 
                 "secondary_link", "primary", "primary_link", 
@@ -46,6 +48,7 @@ parser = argparse.ArgumentParser(prog='osm-stat')
 parser.add_argument("-inputfile")
 parser.add_argument("-url")
 parser.add_argument("-overpass")
+parser.add_argument("-history")
 args = parser.parse_args(sys.argv[1:])
 
 
@@ -59,11 +62,15 @@ def RunSinlge(strDate):
         filenames = OsmDataProvider.GetOverpassOSMData(bbox, strDate)
     elif args.url != None:
         print "Start download OSM data 'url' " + args.url
-        fName = OsmDataProvider.GetUrlOSMData(bbox, args.url)
+        fName = OSMConverter.ConvertUrl(bbox, args.url)
         filenames.append(fName)
     elif args.inputfile != None:
-        print "Parse OSM data 'inputfile' " + args.inputfile
-        fName = OsmDataProvider.GetFileOSMData(bbox, args.inputfile)
+        print "Parse OSM data 'inputfile' " + args.inputfile        
+        fName = OSMConverter.ConvertFile(bbox, args.inputfile)
+        filenames.append(fName)
+    elif args.history != None:
+        print "Start extract OSM data from history file: " + args.history
+        fName = OSMHistory.ExtractHistory(args.history, strDate)
         filenames.append(fName)
     else:
         raise "not supported"
@@ -81,8 +88,12 @@ def RunSinlge(strDate):
         outStr += "," + str(value.Count)
         milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
         outStr += "," + str(milesLength) + "\n"
-        outFile.write(outStr)
+        outFile.write(outStr)    
     
+
+
+
+
     
 
 outFile = open("output.csv", "w")
@@ -93,24 +104,40 @@ outFile.close()
 if args.overpass == "true":
     for i in range(0, countOfMonth):
         strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
-        print "Update time :", strDate
+        print "Extract date :", strDate
 
         RunSinlge(strDate)
 
         # go to next month
         updateDate = AddMonths(updateDate, 1)    
 elif args.inputfile != None:
-    strDate = OSMDateInfo.GetDateFromFile(args.inputfile)
+    strDate = OSMDateInfo.GetDateFromFile(args.inputfile)    
     RunSinlge(strDate)
 elif args.url != None:
     strDate = OSMDateInfo.GetDateFromUrl(args.url)
     RunSinlge(strDate)
+elif args.history != None:
+    # first clip and convert file
+    if args.history.startswith("http://"):
+        print "Start convert OSM data from history url: " + args.history
+        fOutConvertName = OSMConverter.ConvertUrl(bbox, args.history)
+    else:
+        print "Start convert OSM data from history file: " + args.history
+        fOutConvertName = OSMConverter.ConvertFile(bbox, args.history)
 
+    # replace argument
+    args.history = fOutConvertName
+
+    for i in range(0, countOfMonth):
+        strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
+        print "Extract date :", strDate
+
+        RunSinlge(strDate)
+
+    # go to next month
+    updateDate = AddMonths(updateDate, 1)    
 else:
-    raise "not supported arguments"
-
-
-outFile.close()
+    raise "Not supported arguments"
 
 
 print "Done success"

@@ -215,6 +215,9 @@ def GetFileOSMData(bbox, filename):
         isNeedDecompress = False
         if file_extension == ".bz2":
             isNeedDecompress = True
+        if file_extension == ".shp":
+            return filename # no any extract
+
         #else:
         #    return filename # if file not compress no action
 
