@@ -16,8 +16,8 @@ import OSMConverter
 #
 
 # Parameters of date region
-updateDate = datetime.date(2012, 9, 12)#2012-09-12
-countOfMonth = 1
+updateDate = datetime.date(2016, 1, 1)#2012-09-12
+countOfMonth = 5
 
 # boundary of countries in shape format
 shpBoundFilename = "./CountriesBounds/countries.shp"

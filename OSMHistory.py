@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 import httplib
 import datetime
 import time
@@ -35,36 +35,43 @@ class OSMHistoryParser(object):
         elif name != "node" and name != "way":
             return
         
-        if name == "node" or name == "way" or name == "relation":
-            if attrib.has_key("timestamp"):
-                dateStr = attrib["timestamp"]
-                if dateStr != "":
-                    date = self._fastDateParse(dateStr)
-                    
-                    if date > self._targetDate:
-                        return# Skip futures dates
+        dateStr = ""
+        if attrib.has_key("timestamp"):
+            dateStr = attrib["timestamp"]
 
-                    if self._iteration == 1: 
-                        elId = attrib["id"]
-                        if self._idsDateMap.has_key(elId):
-                            prevElementDate = self._idsDateMap[elId]
-                            if date > prevElementDate:
-                                self._idsDateMap[elId] = date
-                        else:
+        if name == "node" or name == "way":
+            if dateStr != "":
+                date = self._fastDateParse(dateStr)
+                    
+                if date > self._targetDate:
+                    return# Skip futures dates
+
+                if self._iteration == 1: 
+                    elId = attrib["id"]
+                    if self._idsDateMap.has_key(elId):
+                        prevElementDate = self._idsDateMap[elId]
+                        if date > prevElementDate:
                             self._idsDateMap[elId] = date
-                    elif self._iteration == 2:
-                        elId = attrib["id"]
-                        if self._idsDateMap.has_key(elId) == False:
-                            raise "Element with id not found" + str(elId)
-                        mapDate = self._idsDateMap[elId] 
-                        if mapDate != date:
-                            return
                     else:
-                        raise "Unsupported iteration " + str(self._iteration)
+                        self._idsDateMap[elId] = date
+                elif self._iteration == 2:
+                    elId = attrib["id"]
+                    if self._idsDateMap.has_key(elId) == False:
+                        raise "Element with id not found" + str(elId)
+                    mapDate = self._idsDateMap[elId] 
+                    if mapDate != date:
+                        return
+                else:
+                    raise "Unsupported iteration " + str(self._iteration)
 
 
         if name == "node":
-            outStr = "<node id='{0}' lat='{1}' lon='{2}' />\n".format(attrib["id"], attrib["lat"], attrib["lon"])
+            # check close way tag
+            if self._isWay:
+                self._outfile.write("</way>\n"); 
+                self._isWay = False
+
+            outStr = "<node id='{0}' lat='{1}' lon='{2}' timestamp='{3}' />\n".format(attrib["id"], attrib["lat"], attrib["lon"], dateStr)
             self._outfile.write(outStr); 
         elif name == "way":
             outStr = "<way id='{0}'>\n".format(attrib["id"])
@@ -83,8 +90,9 @@ class OSMHistoryParser(object):
 
     def end_element(self, name):
          if name == "way":
-            self._outfile.write("</way>\n"); 
-            self._isWay = False
+            if self._isWay:
+                self._outfile.write("</way>\n"); 
+                self._isWay = False
 
     def ExtractHistory(self, filename, targetDateStr):
         #etree.parse(filename)
@@ -95,6 +103,9 @@ class OSMHistoryParser(object):
         
 
         # Iteration 1
+
+        print "Run Iteration 1"
+
         p = xml.parsers.expat.ParserCreate()
         p.StartElementHandler = self.start_element
         p.EndElementHandler = self.end_element
@@ -109,6 +120,8 @@ class OSMHistoryParser(object):
             self._outfile.write("</osm>")
 
         # Iteration 2
+        print "Run Iteration 2"
+
         p = xml.parsers.expat.ParserCreate()
         p.StartElementHandler = self.start_element
         p.EndElementHandler = self.end_element
