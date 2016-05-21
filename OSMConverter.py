@@ -10,6 +10,7 @@ import threading
 import StringIO
 import subprocess
 import bz2
+from urlparse import urlparse
 
 if os.name == "nt":
     # Setup windows enviroment

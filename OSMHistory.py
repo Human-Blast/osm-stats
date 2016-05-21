@@ -23,6 +23,8 @@ class OSMHistoryParser(object):
 
     _nodeCounter = 1
 
+    _waysCounter = 1
+
     _iteration = 1
 
     def _fastDateParse(self, val):
@@ -87,7 +89,13 @@ class OSMHistoryParser(object):
             outStr = "<node id='{0}' lat='{1}' lon='{2}' timestamp='{3}' />\n".format(nodeId, attrib["lat"], attrib["lon"], dateStr)
             self._outfile.write(outStr); 
         elif name == "way":
-            outStr = "<way id='{0}' timestamp='{1}'>\n".format(attrib["id"], dateStr)
+            wayId = attrib["id"]
+            if self._iteration == 2:
+                # Generate increasing wys id
+                wayId = str(self._waysCounter)
+                self._waysCounter += 1
+
+            outStr = "<way id='{0}' timestamp='{1}'>\n".format(wayId, dateStr)
             self._outfile.write(outStr);
             self._isWay = True
         elif name == "nd":
