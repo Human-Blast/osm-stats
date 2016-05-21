@@ -19,6 +19,10 @@ class OSMHistoryParser(object):
 
     _idsDateMap = {}
 
+    _idsNode = {}
+
+    _nodeCounter = 1
+
     _iteration = 1
 
     def _fastDateParse(self, val):
@@ -71,14 +75,30 @@ class OSMHistoryParser(object):
                 self._outfile.write("</way>\n"); 
                 self._isWay = False
 
-            outStr = "<node id='{0}' lat='{1}' lon='{2}' timestamp='{3}' />\n".format(attrib["id"], attrib["lat"], attrib["lon"], dateStr)
+            nodeId = attrib["id"]
+
+            if self._iteration == 2:
+                # Generate increasing node id
+                newNodeId = str(self._nodeCounter)
+                self._idsNode[nodeId] = newNodeId
+                nodeId = newNodeId
+                self._nodeCounter += 1
+
+            outStr = "<node id='{0}' lat='{1}' lon='{2}' timestamp='{3}' />\n".format(nodeId, attrib["lat"], attrib["lon"], dateStr)
             self._outfile.write(outStr); 
         elif name == "way":
-            outStr = "<way id='{0}'>\n".format(attrib["id"])
+            outStr = "<way id='{0}' timestamp='{1}'>\n".format(attrib["id"], dateStr)
             self._outfile.write(outStr);
             self._isWay = True
         elif name == "nd":
-            outStr = "<nd ref='{0}'/>\n".format(attrib["ref"])
+            refId = attrib["ref"]
+            if self._iteration == 2:
+                # Generate increasing node id
+                if self._idsNode.has_key(refId):
+                    refId = self._idsNode[refId]
+                else:
+                    return# don't write invalid nodes
+            outStr = "<nd ref='{0}'/>\n".format(refId)
             self._outfile.write(outStr); 
         elif name == "tag":
             if attrib["k"] == "highway":
@@ -114,7 +134,7 @@ class OSMHistoryParser(object):
         self._iteration = 1
         self._outfile = open(iteration1filename, "w")
         with self._outfile:    
-            self._outfile.write("<osm>\n") 
+            self._outfile.write("<osm timestamp='{0}'>\n".format(targetDateStr)) 
             with open(filename, "r") as fpR:    
                 p.ParseFile(fpR)
             self._outfile.write("</osm>")
@@ -127,9 +147,10 @@ class OSMHistoryParser(object):
         p.EndElementHandler = self.end_element
 
         self._iteration = 2
+        self._nodeCounter = 1
         self._outfile = open(outfilename, "w")
         with self._outfile:    
-            self._outfile.write("<osm>\n") 
+            self._outfile.write("<osm timestamp='{0}'>\n".format(targetDateStr)) 
             with open(iteration1filename, "r") as fpR:    
                 p.ParseFile(fpR)
             self._outfile.write("</osm>")

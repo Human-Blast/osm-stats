@@ -97,6 +97,7 @@ def run_web_service():
 
 def GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName):
 
+    
     dsBound = ogr.Open(shpBoundFilename)  
     lyrBound = dsBound.GetLayer()
     geomBound = None
@@ -114,7 +115,7 @@ def GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName):
 
     for filename in filenames:
 
-        ds = ogr.Open( filename )
+        ds = ogr.Open( filename)
 
         if ds is None:
              "ERROR: can't open osm file"
