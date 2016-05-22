@@ -1,3 +1,3 @@
-.\Win32\Scripts\python.exe OSMStat.py -inputfile "test.osm"
+.\Win32\Scripts\python.exe OSMStat.py -history "haiti-history.osm"
 set /p DUMMY=Hit ENTER to continue...
 
