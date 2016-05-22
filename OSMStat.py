@@ -16,8 +16,8 @@ import OSMConverter
 #
 
 # Parameters of date region
-updateDate = datetime.date(2016, 1, 1)#2012-09-12
-countOfMonth = 1
+updateDate = datetime.date(2015, 5, 1)#2012-09-12
+countOfMonth = 12
 
 # boundary of countries in shape format
 shpBoundFilename = "./CountriesBounds/countries.shp"
@@ -53,6 +53,10 @@ args = parser.parse_args(sys.argv[1:])
 
 
 def RunSinlge(strDate):
+    date = datetime.datetime.strptime(strDate, "%Y-%m-%dT%H:%M:%SZ")
+    csvDateStr = date.strftime("%d %B %Y")
+    print csvDateStr
+
     filenames = []
 
     # first download OSM data 
@@ -81,9 +85,10 @@ def RunSinlge(strDate):
     print "Write to CSV..."
 
     outFile = open("output.csv", "a")
+
     
     for key, value in res.iteritems():
-        outStr = strDate
+        outStr = csvDateStr
         outStr += "," + key
         outStr += "," + str(value.Count)
         milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
@@ -105,9 +110,7 @@ if args.overpass == "true":
     for i in range(0, countOfMonth):
         strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
         print "Extract date :", strDate
-
         RunSinlge(strDate)
-
         # go to next month
         updateDate = AddMonths(updateDate, 1)    
 elif args.inputfile != None:
@@ -131,11 +134,10 @@ elif args.history != None:
     for i in range(0, countOfMonth):
         strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
         print "Extract date :", strDate
-
         RunSinlge(strDate)
+        # go to next month
+        updateDate = AddMonths(updateDate, 1)
 
-    # go to next month
-    updateDate = AddMonths(updateDate, 1)    
 else:
     raise "Not supported arguments"
 
