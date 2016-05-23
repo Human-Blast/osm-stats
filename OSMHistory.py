@@ -21,19 +21,35 @@ class OSMHistoryParser(object):
 
     _idsNode = {}
 
+    _idsValidation = {}
+
     _nodeCounter = 1
 
     _waysCounter = 1
 
     _iteration = 1
 
+    def _Reset(self):
+        self._outfile = None
+        self._isWay = False
+        self._targetDate = None
+        self._idsDateMap = {}
+        self._idsNode = {}
+        self._idsValidation = {}
+        self._nodeCounter = 1
+        self._waysCounter = 1
+        self._iteration = 1
+
     def _fastDateParse(self, val):
         return datetime.datetime(
             # "%Y-%m-%dT%H:%M:%SZ"
             int(val[0:4]), # %Y
             int(val[5:7]), # %m
-            int(val[8:10]) # %d
-        ).date()
+            int(val[8:10]), # %d
+            int(val[11:13]), # %H
+            int(val[14:16]), # %M
+            int(val[17:19]) # %S
+        )
 
     def start_element(self, name, attrib):
         if self._isWay and (name == "tag" or name == "nd"):
@@ -42,33 +58,36 @@ class OSMHistoryParser(object):
             return
         
         dateStr = ""
-        if attrib.has_key("timestamp"):
-            dateStr = attrib["timestamp"]
 
         if name == "node" or name == "way":
-            if dateStr != "":
-                date = self._fastDateParse(dateStr)
-                    
-                if date > self._targetDate:
-                    return# Skip futures dates
+            if attrib.has_key("timestamp") == False:
+                return
+            dateStr = attrib["timestamp"]
+            if dateStr == "":
+                return
 
-                if self._iteration == 1: 
-                    elId = attrib["id"]
-                    if self._idsDateMap.has_key(elId):
-                        prevElementDate = self._idsDateMap[elId]
-                        if date > prevElementDate:
-                            self._idsDateMap[elId] = date
-                    else:
+            date = self._fastDateParse(dateStr)
+                
+            if date > self._targetDate:
+                return# Skip futures dates
+
+            if self._iteration == 1: 
+                elId = attrib["id"]
+                if self._idsDateMap.has_key(elId):
+                    prevElementDate = self._idsDateMap[elId]
+                    if date > prevElementDate:
                         self._idsDateMap[elId] = date
-                elif self._iteration == 2:
-                    elId = attrib["id"]
-                    if self._idsDateMap.has_key(elId) == False:
-                        raise "Element with id not found" + str(elId)
-                    mapDate = self._idsDateMap[elId] 
-                    if mapDate != date:
-                        return
                 else:
-                    raise "Unsupported iteration " + str(self._iteration)
+                    self._idsDateMap[elId] = date
+            elif self._iteration == 2:
+                elId = attrib["id"]
+                if self._idsDateMap.has_key(elId) == False:
+                    raise "Element with id not found" + str(elId)
+                mapDate = self._idsDateMap[elId] 
+                if mapDate != date:
+                    return
+            else:
+                raise "Unsupported iteration " + str(self._iteration)
 
 
         if name == "node":
@@ -91,6 +110,14 @@ class OSMHistoryParser(object):
         elif name == "way":
             wayId = attrib["id"]
             if self._iteration == 2:
+                # Validate result
+                if self._idsValidation.has_key(wayId):
+                    errStr = "Found duplicate id:" + str(wayId) + " " + str(dateStr)
+                    print errStr
+                    print "idsDateMap: " + str(self._idsDateMap[wayId])
+                    raise errStr
+                self._idsValidation[wayId] = True
+
                 # Generate increasing wys id
                 wayId = str(self._waysCounter)
                 self._waysCounter += 1
@@ -123,9 +150,10 @@ class OSMHistoryParser(object):
                 self._isWay = False
 
     def ExtractHistory(self, filename, targetDateStr):
-        #etree.parse(filename)
+        
+        self._Reset()
 
-        self._targetDate = datetime.datetime.strptime(targetDateStr, "%Y-%m-%dT%H:%M:%SZ").date()
+        self._targetDate = datetime.datetime.strptime(targetDateStr, "%Y-%m-%dT%H:%M:%SZ")
         outfilename = "history_" + self._targetDate.strftime("%Y_%m_%d") + ".osm"
         print "Dump history to file:", outfilename
         
