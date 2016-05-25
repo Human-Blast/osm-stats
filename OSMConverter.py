@@ -43,7 +43,7 @@ def ConvertFile(bbox, filename):
         if os.name == "nt":
             appName = "osmconvert"
         else :
-            appName = "osmconvert32"
+            appName = "./osmconvert64"
 
         boxStr = str(xmin) + "," + str(ymin) + "," + str(xmax) + "," + str(ymax)
         #-b xmin ymin xmax ymax
@@ -127,7 +127,7 @@ def ConvertUrl(bbox, url):
         if os.name == "nt":
             appName = "osmconvert"
         else :
-            appName = "osmconvert32"
+            appName = "./osmconvert64"
 
         boxStr = str(xmin) + "," + str(ymin) + "," + str(xmax) + "," + str(ymax)
         #-b xmin ymin xmax ymax
