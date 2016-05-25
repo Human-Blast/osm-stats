@@ -32,6 +32,22 @@ highwayTypes = ["motorway", "secondary",
 countryNames = ["Haiti"]
 # End of applications parameters
 
+def MoveToNextWeek(sourcedate):
+        d = sourcedate - datetime.timedelta(days=7)
+        return d
+
+parser = argparse.ArgumentParser(prog='osm-stat')
+parser.add_argument("-inputfile")
+parser.add_argument("-url")
+parser.add_argument("-overpass")
+parser.add_argument("-history")
+parser.add_argument("-country")
+args = parser.parse_args(sys.argv[1:])
+
+if args.country != "" and args.country != None:
+    countryNames = []
+    countryNames.append(str(args.country))
+
 
 for countryName in countryNames:
     print "=============================="
@@ -43,16 +59,6 @@ for countryName in countryNames:
     #to test only:
     #bbox = {"s": "17.8951", "w": "-72.2948", "n": "18.2313", "e": "-70.9827"}
 
-    def MoveToNextWeek(sourcedate):
-            d = sourcedate - datetime.timedelta(days=7)
-            return d
-
-    parser = argparse.ArgumentParser(prog='osm-stat')
-    parser.add_argument("-inputfile")
-    parser.add_argument("-url")
-    parser.add_argument("-overpass")
-    parser.add_argument("-history")
-    args = parser.parse_args(sys.argv[1:])
 
 
     def RunSinlge(strDate):
@@ -66,18 +72,18 @@ for countryName in countryNames:
         if args.overpass == "true":
             # download by Overpass_API
             print "Start download OSM data 'Overpass_API' "
-            filenames = OsmDataProvider.GetOverpassOSMData(bbox, strDate)
+            filenames = OsmDataProvider.GetOverpassOSMData(bbox, strDate, countryName)
         elif args.url != None:
             print "Start download OSM data 'url' " + args.url
-            fName = OSMConverter.ConvertUrl(bbox, args.url)
+            fName = OSMConverter.ConvertUrl(bbox, args.url, countryName)
             filenames.append(fName)
         elif args.inputfile != None:
             print "Parse OSM data 'inputfile' " + args.inputfile        
-            fName = OSMConverter.ConvertFile(bbox, args.inputfile)
+            fName = OSMConverter.ConvertFile(bbox, args.inputfile, countryName)
             filenames.append(fName)
         elif args.history != None:
             print "Start extract OSM data from history file: " + args.history
-            fName = OSMHistory.ExtractHistory(args.history, strDate)
+            fName = OSMHistory.ExtractHistory(args.history, strDate, countryName)
             filenames.append(fName)
         else:
             raise "not supported"
@@ -121,10 +127,10 @@ for countryName in countryNames:
         # first clip and convert file
         if args.history.startswith("http://"):
             print "Start convert OSM data from history url: " + args.history
-            fOutConvertName = OSMConverter.ConvertUrl(bbox, args.history)
+            fOutConvertName = OSMConverter.ConvertUrl(bbox, args.history, countryName)
         else:
             print "Start convert OSM data from history file: " + args.history
-            fOutConvertName = OSMConverter.ConvertFile(bbox, args.history)
+            fOutConvertName = OSMConverter.ConvertFile(bbox, args.history, countryName)
 
         # replace argument
         args.history = fOutConvertName

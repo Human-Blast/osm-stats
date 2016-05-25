@@ -149,14 +149,13 @@ class OSMHistoryParser(object):
                 self._outfile.write("</way>\n"); 
                 self._isWay = False
 
-    def ExtractHistory(self, filename, targetDateStr):
+    def ExtractHistory(self, filename, targetDateStr, countryName):
         
         self._Reset()
 
         self._targetDate = datetime.datetime.strptime(targetDateStr, "%Y-%m-%dT%H:%M:%SZ")
-        outfilename = "history_" + self._targetDate.strftime("%Y_%m_%d") + ".osm"
+        outfilename = "history_iteration2.osm"
         print "Dump history to file:", outfilename
-        
 
         # Iteration 1
 
@@ -193,7 +192,7 @@ class OSMHistoryParser(object):
 
         return outfilename
 
-def ExtractHistory(filename, targetDateStr):
+def ExtractHistory(filename, targetDateStr, countryName):
     parser = OSMHistoryParser()
-    outfilename = parser.ExtractHistory(filename, targetDateStr)
+    outfilename = parser.ExtractHistory(filename, targetDateStr, countryName)
     return outfilename
