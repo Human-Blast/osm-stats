@@ -72,16 +72,13 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName):
     else:
         raise "not supported"
 
-    lockCSV.acquire()
-    print "Start calculate statistic..."
-    lockCSV.release()
-
-    res = GDALWorker.GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName)
 
     lockCSV.acquire()
     
-    print "Write to CSV..."
+    print "Start calculate statistic..."
+    res = GDALWorker.GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName)
 
+    print "Write to CSV..."
     outFile = open("output-" + countryName + ".csv", "a")
     countryShortName = GDALWorker.GetShortCountryName(shpBoundFilename, countryName)
     for key, value in res.iteritems():
@@ -199,7 +196,7 @@ if __name__ == '__main__':
             raise "Not supported arguments"
 
         #print "Write to database"
-        if args.db == None or args.db == "true":
+        if args.db == "true":
             StatDatabase.WriteCSVToDatabase(outFilename)
 
         print "Done country : " + str(countryName)
