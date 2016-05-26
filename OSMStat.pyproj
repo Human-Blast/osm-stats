@@ -16,7 +16,7 @@
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <Environment>
     </Environment>
-    <CommandLineArguments>-history "history_out.osm"</CommandLineArguments>
+    <CommandLineArguments>-push "test.csv"</CommandLineArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>

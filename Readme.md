@@ -27,14 +27,13 @@ Example:
 python2.7 OSMStat.py -inputfile "planet.osm.bz2" 
 ```
 
--url : download and parse OSM file
+-country : set name of country
 
+-pushCSV: push csv file to database
 
-Example:
+-weeksCount: latest weeks count
 
-```sh
-python2.7 OSMStat.py -url "http://download.gisgraphy.com/openstreetmap/pbf/AD.tar.bz2"
-```
+-db: wirte result to database
 
 -overpass: use OverpassAPI to download data  This API allowed get "Historic dumps" of OSM data. More info about  "Overpass_API"
 
@@ -57,11 +56,15 @@ sudo apt-get install gdal-bin
 ```sh
 sudo apt-get install python-gdal
 ```
+```sh
+sudo apt-get install python-psycopg2
+```
 
 To run script you will run command:
 ```sh
 python2.7 OSMStat.py -inputfile "planetfile.osm.bz"
 ```
+
 
 ## Windows 
 
@@ -71,7 +74,8 @@ To run script on Windows platform you will need run "run.bat" Output wil be in t
 
 Output CSV file contains next fields:
 
-- "Date" - is date of "Historic dump"
-- "Name" - is type of "highway" in OSM data
-- "Count" - is count of ways
-- "Length" - is summary length of ways in milles
+- "Date" - date of "Historic dump"
+- "Country" - country code like "fr", "ht", "ru"
+- "Name" - kind of OSM data 
+- "Count" - count of ways
+- "Length" - summary length of ways in milles

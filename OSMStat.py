@@ -103,9 +103,9 @@ if __name__ == '__main__':
     parser.add_argument("-overpass")
     parser.add_argument("-history")
     parser.add_argument("-country")
-    parser.add_argument("-push")
+    parser.add_argument("-pushCSV")
     parser.add_argument("-weeksCount")
-    parser.add_argument("-nodb")
+    parser.add_argument("-db")
     args = parser.parse_args(sys.argv[1:])
 
 
@@ -116,8 +116,8 @@ if __name__ == '__main__':
         countryNames = []
         countryNames.append(str(args.country))
 
-    if args.push != "" and args.push != None:
-        #StatDatabase.WriteCSVToDatabase(args.push, GDALWorker.GetShortCountryName(shpBoundFilename, args.country))
+    if args.pushCSV != "" and args.pushCSV != None:
+        StatDatabase.WriteCSVToDatabase(args.pushCSV)
         sys.exit(0)
 
     _lockCSV = multiprocessing.Lock()
@@ -199,7 +199,7 @@ if __name__ == '__main__':
             raise "Not supported arguments"
 
         #print "Write to database"
-        if args.nodb == None or args.nodb == "true":
+        if args.db == None or args.db == "true":
             StatDatabase.WriteCSVToDatabase(outFilename)
 
         print "Done country : " + str(countryName)
