@@ -1,4 +1,5 @@
 ﻿import sys
+import os
 import httplib
 import datetime
 import calendar
@@ -9,6 +10,7 @@ import GDALWorker
 import OSMDateInfo
 import OSMHistory
 import OSMConverter
+#import StatDatabase
 
 
 #
@@ -17,7 +19,7 @@ import OSMConverter
 
 # Parameters of date region
 updateDate = datetime.date(2016, 5, 16)
-countOfWeeks = 52
+countOfWeeks = 1
 
 # boundary of countries in shape format
 shpBoundFilename = "./CountriesBounds/countries.shp"
@@ -42,11 +44,68 @@ parser.add_argument("-url")
 parser.add_argument("-overpass")
 parser.add_argument("-history")
 parser.add_argument("-country")
+parser.add_argument("-push")
+parser.add_argument("-weeksCount")
+parser.add_argument("-nodb")
 args = parser.parse_args(sys.argv[1:])
+
+
+if args.weeksCount != "" and args.weeksCount != None:
+    countOfWeeks = int(args.weeksCount)
 
 if args.country != "" and args.country != None:
     countryNames = []
     countryNames.append(str(args.country))
+
+if args.push != "" and args.push != None:
+    if args.country == "" or args.country == None:
+        raise "-country argument not set"
+    #StatDatabase.WriteCSVToDatabase(args.push, GDALWorker.GetShortCountryName(shpBoundFilename, args.country))
+    #sys.exit(0)
+
+def RunSinlge(strDate):
+    date = datetime.datetime.strptime(strDate, "%Y-%m-%dT%H:%M:%SZ")
+    csvDateStr = date.strftime("%d %B %Y")
+    print csvDateStr
+
+    filenames = []
+
+    # first download OSM data 
+    if args.overpass == "true":
+        # download by Overpass_API
+        print "Start download OSM data 'Overpass_API' "
+        filenames = OsmDataProvider.GetOverpassOSMData(bbox, strDate, countryName)
+    elif args.url != None:
+        print "Start download OSM data 'url' " + args.url
+        fName = OSMConverter.ConvertUrl(bbox, args.url, countryName)
+        filenames.append(fName)
+    elif args.inputfile != None:
+        print "Parse OSM data 'inputfile' " + args.inputfile        
+        fName = OSMConverter.ConvertFile(bbox, args.inputfile, countryName)
+        filenames.append(fName)
+    elif args.history != None:
+        print "Start extract OSM data from history file: " + args.history
+        fName = OSMHistory.ExtractHistory(args.history, strDate, countryName)
+        filenames.append(fName)
+    else:
+        raise "not supported"
+
+    print "Start calculate statistic..."
+    res = GDALWorker.GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName)
+
+    print "Write to CSV..."
+
+    outFile = open("output-" + countryName + ".csv", "a")
+    
+    for key, value in res.iteritems():
+        outStr = csvDateStr
+        outStr += "," + key
+        outStr += "," + str(value.Count)
+        milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
+        outStr += "," + str(milesLength) + "\n"
+        outFile.write(outStr)    
+    
+print "Count of weeks", countOfWeeks
 
 
 for countryName in countryNames:
@@ -60,52 +119,8 @@ for countryName in countryNames:
     #bbox = {"s": "17.8951", "w": "-72.2948", "n": "18.2313", "e": "-70.9827"}
 
 
-
-    def RunSinlge(strDate):
-        date = datetime.datetime.strptime(strDate, "%Y-%m-%dT%H:%M:%SZ")
-        csvDateStr = date.strftime("%d %B %Y")
-        print csvDateStr
-
-        filenames = []
-
-        # first download OSM data 
-        if args.overpass == "true":
-            # download by Overpass_API
-            print "Start download OSM data 'Overpass_API' "
-            filenames = OsmDataProvider.GetOverpassOSMData(bbox, strDate, countryName)
-        elif args.url != None:
-            print "Start download OSM data 'url' " + args.url
-            fName = OSMConverter.ConvertUrl(bbox, args.url, countryName)
-            filenames.append(fName)
-        elif args.inputfile != None:
-            print "Parse OSM data 'inputfile' " + args.inputfile        
-            fName = OSMConverter.ConvertFile(bbox, args.inputfile, countryName)
-            filenames.append(fName)
-        elif args.history != None:
-            print "Start extract OSM data from history file: " + args.history
-            fName = OSMHistory.ExtractHistory(args.history, strDate, countryName)
-            filenames.append(fName)
-        else:
-            raise "not supported"
-
-        print "Start calculate statistic..."
-        res = GDALWorker.GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName)
-
-        print "Write to CSV..."
-
-        outFile = open("output-" + countryName + ".csv", "a")
-
-    
-        for key, value in res.iteritems():
-            outStr = csvDateStr
-            outStr += "," + key
-            outStr += "," + str(value.Count)
-            milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
-            outStr += "," + str(milesLength) + "\n"
-            outFile.write(outStr)    
-    
-
-    outFile = open("output-" + countryName + ".csv", "w")
+    outFilename = "output-" + countryName + ".csv"
+    outFile = open(outFilename, "w")
     outFile.write("Date,Name,Count,Length\n")
     outFile.close()
 
@@ -141,9 +156,14 @@ for countryName in countryNames:
             RunSinlge(strDate)
             # go to next month
             updateDate = MoveToNextWeek(updateDate)
-
     else:
         raise "Not supported arguments"
 
+    #print "Write to database"
+    #if args.nodb == None or args.nodb == "true":
+    #    StatDatabase.WriteCSVToDatabase(outputFilename)
 
-    print "Done success"
+    print "Done country : " + str(countryName)
+
+
+print "Done success"

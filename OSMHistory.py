@@ -1,4 +1,5 @@
 ﻿import sys
+import os
 import httplib
 import datetime
 import time
@@ -17,28 +18,38 @@ class OSMHistoryParser(object):
 
     _targetDate = None
 
-    _idsDateMap = {}
+    _nodeCounter = 1
 
     _idsNode = {}
 
     _idsValidation = {}
 
-    _nodeCounter = 1
-
     _waysCounter = 1
 
-    _iteration = 1
+    _outStr = ""
+
+    _prevId = ""
+
+    _prevType = ""
+
+    _prevElementDate = None
+
+    _chars_to_remove = ['&', '"', '\'', '<', '/', '>']
+
+    _nodeInWayCounter = 0
 
     def _Reset(self):
         self._outfile = None
         self._isWay = False
         self._targetDate = None
-        self._idsDateMap = {}
         self._idsNode = {}
         self._idsValidation = {}
         self._nodeCounter = 1
         self._waysCounter = 1
-        self._iteration = 1
+        self._prevElementDate = None
+        self._prevId = ""
+        self._prevType = ""
+        self._nodeInWayCounter = 0
 
     def _fastDateParse(self, val):
         return datetime.datetime(
@@ -71,126 +82,110 @@ class OSMHistoryParser(object):
             if date > self._targetDate:
                 return# Skip futures dates
 
-            if self._iteration == 1: 
-                elId = attrib["id"]
-                if self._idsDateMap.has_key(elId):
-                    prevElementDate = self._idsDateMap[elId]
-                    if date > prevElementDate:
-                        self._idsDateMap[elId] = date
-                else:
-                    self._idsDateMap[elId] = date
-            elif self._iteration == 2:
-                elId = attrib["id"]
-                if self._idsDateMap.has_key(elId) == False:
-                    raise "Element with id not found" + str(elId)
-                mapDate = self._idsDateMap[elId] 
-                if mapDate != date:
-                    return
-            else:
-                raise "Unsupported iteration " + str(self._iteration)
+            elId = attrib["id"]
+            if self._prevId != elId or self._prevType != name:
+                if self._outStr != "":
+                    # Validate result
+                    key = self._prevType + self._prevId
+                    if self._idsValidation.has_key(key):
+                        errStr = "Found duplicate id:" + str(self._prevId) + " " + str(self._prevType)
+                        print errStr
+                        raise errStr
+                    self._idsValidation[key] = True
+
+                    self._outfile.write(self._outStr); 
+                    self._outStr = ""
+
+                    if self._prevType == "node":
+                        # Generate increasing node id
+                        self._idsNode[self._prevId] = str(self._nodeCounter)
+                        self._nodeCounter += 1
+                    elif self._prevType == "way":
+                        self._waysCounter += 1
+                    else:
+                        raise "Not supported type: " + str(self._prevType)
+
+                self._prevId = elId
+                self._prevType = name
+                self._prevElementDate = date
 
 
-        if name == "node":
-            # check close way tag
-            if self._isWay:
-                self._outfile.write("</way>\n"); 
-                self._isWay = False
+            if date < self._prevElementDate:
+                return # skip old items
 
-            nodeId = attrib["id"]
+            self._outStr = ""
 
-            if self._iteration == 2:
-                # Generate increasing node id
-                newNodeId = str(self._nodeCounter)
-                self._idsNode[nodeId] = newNodeId
-                nodeId = newNodeId
-                self._nodeCounter += 1
 
-            outStr = "<node id='{0}' lat='{1}' lon='{2}' timestamp='{3}' />\n".format(nodeId, attrib["lat"], attrib["lon"], dateStr)
-            self._outfile.write(outStr); 
-        elif name == "way":
-            wayId = attrib["id"]
-            if self._iteration == 2:
-                # Validate result
-                if self._idsValidation.has_key(wayId):
-                    errStr = "Found duplicate id:" + str(wayId) + " " + str(dateStr)
-                    print errStr
-                    print "idsDateMap: " + str(self._idsDateMap[wayId])
-                    raise errStr
-                self._idsValidation[wayId] = True
+        if name == "node":            
+            nodeId = str(self._nodeCounter)
 
-                # Generate increasing wys id
-                wayId = str(self._waysCounter)
-                self._waysCounter += 1
+            self._outStr = "<node id=\"{0}\" lat=\"{1}\" lon=\"{2}\" timestamp=\"{3}\" />\n".format(nodeId, attrib["lat"], attrib["lon"], dateStr)
+        elif name == "way":            
+            # Generate increasing wys id
+            wayId = str(self._waysCounter)
 
-            outStr = "<way id='{0}' timestamp='{1}'>\n".format(wayId, dateStr)
-            self._outfile.write(outStr);
+            self._outStr += "<way id=\"{0}\" timestamp=\"{1}\">\n".format(wayId, dateStr)
             self._isWay = True
+            self._nodeInWayCounter = 0
         elif name == "nd":
+            if self._nodeInWayCounter >= 1999: # limit of GDAL
+                return# Skip nodes to fix Too many nodes referenced in way
+
             refId = attrib["ref"]
-            if self._iteration == 2:
-                # Generate increasing node id
-                if self._idsNode.has_key(refId):
-                    refId = self._idsNode[refId]
-                else:
-                    return# don't write invalid nodes
-            outStr = "<nd ref='{0}'/>\n".format(refId)
-            self._outfile.write(outStr); 
+            # Generate increasing node id
+            if self._idsNode.has_key(refId):
+                refId = self._idsNode[refId]
+            else:
+                return# don't write invalid nodes
+            self._outStr += "<nd ref=\"{0}\"/>\n".format(refId)
+            self._nodeInWayCounter += 1
+
         elif name == "tag":
-            if attrib["k"] == "highway":
+            if attrib["k"] != "":
                 try: 
-                    outStr = "<tag k='{0}' v='{1}' />\n".format(attrib["k"], attrib["v"])
-                    self._outfile.write(outStr); 
+                    v = attrib["v"]
+                    if attrib["k"] == "note":
+                        return
+                    v = str(v).translate(None, ''.join(self._chars_to_remove))
+                    self._outStr += "<tag k=\"{0}\" v=\"{1}\" />\n".format(attrib["k"], v)
                 except:
                     return
 
     def end_element(self, name):
          if name == "way":
             if self._isWay:
-                self._outfile.write("</way>\n"); 
+                self._outStr += "</way>\n" 
                 self._isWay = False
+                self._nodeInWayCounter = 0
 
     def ExtractHistory(self, filename, targetDateStr, countryName):
         
         self._Reset()
 
         self._targetDate = datetime.datetime.strptime(targetDateStr, "%Y-%m-%dT%H:%M:%SZ")
-        outfilename = "history_iteration2.osm"
+        outfilename = "history_out.osm"
         print "Dump history to file:", outfilename
-
-        # Iteration 1
-
-        print "Run Iteration 1"
-
+        
         p = xml.parsers.expat.ParserCreate()
         p.StartElementHandler = self.start_element
         p.EndElementHandler = self.end_element
 
-        iteration1filename = "history_iteration1.osm"
-        self._iteration = 1
-        self._outfile = open(iteration1filename, "w")
-        with self._outfile:    
-            self._outfile.write("<osm timestamp='{0}'>\n".format(targetDateStr)) 
-            with open(filename, "r") as fpR:    
-                p.ParseFile(fpR)
-            self._outfile.write("</osm>")
-
-        # Iteration 2
-        print "Run Iteration 2"
-
-        p = xml.parsers.expat.ParserCreate()
-        p.StartElementHandler = self.start_element
-        p.EndElementHandler = self.end_element
-
-        self._iteration = 2
         self._nodeCounter = 1
         self._outfile = open(outfilename, "w")
         with self._outfile:    
             self._outfile.write("<osm timestamp='{0}'>\n".format(targetDateStr)) 
-            with open(iteration1filename, "r") as fpR:    
+            with open(filename, "r") as fpR:
                 p.ParseFile(fpR)
+            
+            # check if not yet write
+            if self._outStr != "":
+                # write final node
+                self._outfile.write(self._outStr)
+
             self._outfile.write("</osm>")
 
         return outfilename
+    
 
 def ExtractHistory(filename, targetDateStr, countryName):
     parser = OSMHistoryParser()

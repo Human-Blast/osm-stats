@@ -25,6 +25,19 @@ from osgeo import osr
 #for i in range(0, countDriver):
 #    print ogr.GetDriver(i).GetName()
 
+#
+# Description of statistic fields
+#
+StatFieldOneWay = "one_way"
+# Turn Restrictions
+StatFieldTurnRestrict = "turn_restrict"
+# Roads with Names (i.e. Elm Street)
+StatFieldRoadsWithNames = "roads_with_names"
+# Roads with Designation (vs name - i.e. Interstate I-70, State Road 324, etc.)
+StatFieldRoadsWithDesignation = "roads_with_designation"
+# Roads with Different/Secondry Languages other than local language let's look for these secondary languages initially: English Spanish French Mandarin Portuguese
+StatFieldRoadsWithSecondLang = "roads_with_second_lang"
+
 class StaticsticRes:
     Length = 0
     Count = 0
@@ -49,6 +62,20 @@ def gdal_error_handler(err_class, err_num, err_msg):
  # install error handler
 gdal.PushErrorHandler(gdal_error_handler)
 
+def GetShortCountryName(shpBoundFilename, countryName):
+        dsBound = ogr.Open(shpBoundFilename)  
+        lyrBound = dsBound.GetLayer()
+        env = None
+        for feature in lyrBound:
+            # get the input geometry
+            name = feature.GetField("NAME")
+            if name.lower() == countryName.lower():
+                name = feature.GetField("ISO2")
+                if name == "":
+                    raise "ISO2 not set for: " + countryName
+                return name.lower()
+        raise "Country not found : " + countryName
+
 def GetQueryBox(shpBoundFilename, countryName):
     dsBound = ogr.Open(shpBoundFilename)  
     lyrBound = dsBound.GetLayer()
@@ -60,11 +87,81 @@ def GetQueryBox(shpBoundFilename, countryName):
         if name.lower() == countryName.lower():
             env = geom.GetEnvelope()
             break            
-
+    if env == None:
+        raise "Country not found : " + countryName
     return {"w": str(env[0]), "e": str(env[1]), "s": str(env[2]), "n": str(env[3])}
 
 
-def GetLengths(res, layer, highwayTypes, boundGeom):
+# Add statistic for highway
+def AddHighways(res, highwayTypes, feature, len):
+        highwayVal = feature.GetField("highway")
+        if highwayVal != None: 
+            if highwayVal in highwayTypes:
+                res[highwayVal].Length += len
+                res[highwayVal].Count += 1
+
+# Roads with Names (i.e. Elm Street)
+def AddOneWay(res, feature, len, fieldNames):
+    if fieldNames.has_key("oneway") == False:
+        return
+    onewayVal = feature.GetField("oneway")    
+    highwayVal = feature.GetField("highway")
+
+    # 1. Some tags (such as junction=roundabout, highway=motorway and others) imply oneway=yes
+    # 2. If the oneway restriction is in the opposite direction to the drawn way, the fix in most cases is to turn the way around ("reverse way" tool in the map editors)
+    #    and apply oneway=yes. If in a (very) rare case, the direction of the way cannot be changed, you can instead tag it as oneway=-1.
+    if onewayVal == "yes" or onewayVal == "-1" or highwayVal == "motorway":
+        res[StatFieldOneWay].Length += len
+        res[StatFieldOneWay].Count += 1   
+
+def AddTurn(res, feature, len, fieldNames):
+    if fieldNames.has_key("turn") == False:
+        return
+    highwayVal = feature.GetField("highway")
+    turnVal = feature.GetField("turn")    
+
+    if turnVal != "" and turnVal != None:
+        res[StatFieldTurnRestrict].Length += len
+        res[StatFieldTurnRestrict].Count += 1   
+
+def AddRoadsWithNames(res, feature, len, fieldNames):
+    # Use the name=* and/or the ref=* for each section of the road (way) which has a name or reference.   
+    nameVal = ""
+    if fieldNames.has_key("name"):
+        nameVal = feature.GetField("name")
+    # In addition, where a road is now much more generally known by its reference (for example the 'A1' in the UK), 
+    # but that it also has a current legal name for historical reasons 
+    # if it probably better to leave the name field blank and put the name in alt_name which means that it is much less likely to be rendered.
+    altNameVal = ""
+    if fieldNames.has_key("alt_name"):
+        altNameVal = feature.GetField("alt_name")
+
+    ref = ""
+    if fieldNames.has_key("ref"):
+        ref = feature.GetField("ref")
+
+    if (nameVal != "" and nameVal != None) or (altNameVal != "" and altNameVal != None):
+        if ref != "" and ref != None:
+            # Roads with Designation (vs name - i.e. Interstate I-70, State Road 324, etc.)
+            res[StatFieldRoadsWithDesignation].Length += len
+            res[StatFieldRoadsWithDesignation].Count += 1
+        else:
+            # Roads with Names (i.e. Elm Street)
+            res[StatFieldRoadsWithNames].Length += len
+            res[StatFieldRoadsWithNames].Count += 1
+
+def AddRoadsWithSecondryLang(res, layer, feature, len, langNamesFields):
+        counter = 0
+        for fieldName in langNamesFields:
+            nameVal = feature.GetField(fieldName)
+            if nameVal != "" and nameVal != None:
+                counter += 1
+        if counter >= 2:
+            res[StatFieldRoadsWithSecondLang].Length += len
+            res[StatFieldRoadsWithSecondLang].Count += 1
+
+
+def GetStatFromLayer(res, layer, highwayTypes, boundGeom):
 
     source = layer.GetSpatialRef()
     #print source.ExportToWkt()
@@ -76,27 +173,52 @@ def GetLengths(res, layer, highwayTypes, boundGeom):
 
     layer.SetSpatialFilter(boundGeom)
 
+    # Collect field names
+    defn = layer.GetLayerDefn()
+    fieldNames = {}
+    for i in range(defn.GetFieldCount()):
+        fieldname = defn.GetFieldDefn(i).GetName()
+        fieldNames[fieldname] = True
+
+    langNames = []
+    langNamesFields = []
+    for fieldNamePair in fieldNames.items():
+        fieldName = fieldNamePair[0]
+        if fieldName.startswith("name:"):
+            langName = str(fieldName)
+            langName = langName.replace("name:left:", "")
+            langName = langName.replace("name:right:", "")
+            langName = langName.replace("name:", "")
+            # Roads with Different/Secondry Languages other than local language 
+            # let's look for these secondary languages initially: English Spanish French Mandarin Portuguese
+            if langName in ["en", "es", "fr", "zh", "pt"]:
+                langNames.append(fieldName)
+                langNamesFields.append(fieldName)
+
+
     for feature in layer:
-         # get the input geometry
-        geom = feature.GetGeometryRef()
         highwayVal = feature.GetField("highway")
-        if highwayVal != None: 
-            if highwayVal in highwayTypes:
-                # reproject the geometry
-                geom.Transform(coordTrans)
-                len = geom.Length()
-                res[highwayVal].Length += len
-                res[highwayVal].Count += 1
+        if highwayVal == "" or highwayVal == None:
+            continue
+
+        # get the input geometry
+        geom = feature.GetGeometryRef()
+        # reproject the geometry to meters
+        geom.Transform(coordTrans)
+        # get length in meters
+        len = geom.Length()
+
+        AddHighways(res, highwayTypes, feature, len)
+        AddOneWay(res, feature, len, fieldNames)
+        AddTurn(res, feature, len, fieldNames)
+        AddRoadsWithNames(res, feature, len, fieldNames)
+        AddRoadsWithSecondryLang(res, layer, feature, len, langNamesFields)
+
+
     return res
 
-def keep_running():
-    return True
-
-def run_web_service():
-    os.system('python WebService.py')    
 
 def GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName):
-
     
     dsBound = ogr.Open(shpBoundFilename)  
     lyrBound = dsBound.GetLayer()
@@ -112,6 +234,13 @@ def GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName):
     res = {}
     for hType in highwayTypes:
         res[hType] = StaticsticRes()
+    # Add other statistic fields
+    res[StatFieldOneWay] = StaticsticRes()
+    res[StatFieldTurnRestrict] = StaticsticRes()
+    res[StatFieldRoadsWithNames] = StaticsticRes()
+    res[StatFieldRoadsWithDesignation] = StaticsticRes()
+    res[StatFieldRoadsWithSecondLang] = StaticsticRes()
+
 
     for filename in filenames:
 
@@ -123,8 +252,8 @@ def GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName):
         for idx in range(0, ds.GetLayerCount()):
             lyr = ds.GetLayer(idx)
             geomType = lyr.GetGeomType()
-            if geomType == 2:
-                GetLengths(res, lyr, highwayTypes, geomBound)
+            if geomType == 2:# ways geometry type
+                GetStatFromLayer(res, lyr, highwayTypes, geomBound)
                 break
 
     return res
