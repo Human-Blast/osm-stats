@@ -58,10 +58,8 @@ if args.country != "" and args.country != None:
     countryNames.append(str(args.country))
 
 if args.push != "" and args.push != None:
-    if args.country == "" or args.country == None:
-        raise "-country argument not set"
-    #StatDatabase.WriteCSVToDatabase(args.push, GDALWorker.GetShortCountryName(shpBoundFilename, args.country))
-    #sys.exit(0)
+    StatDatabase.WriteCSVToDatabase(args.push, GDALWorker.GetShortCountryName(shpBoundFilename, args.country))
+    sys.exit(0)
 
 def RunSinlge(strDate):
     date = datetime.datetime.strptime(strDate, "%Y-%m-%dT%H:%M:%SZ")
@@ -96,9 +94,10 @@ def RunSinlge(strDate):
     print "Write to CSV..."
 
     outFile = open("output-" + countryName + ".csv", "a")
-    
+    countryShortName = GDALWorker.GetShortCountryName(shpBoundFilename, countryName)
     for key, value in res.iteritems():
         outStr = csvDateStr
+        outStr += "," + countryShortName
         outStr += "," + key
         outStr += "," + str(value.Count)
         milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
@@ -121,7 +120,7 @@ for countryName in countryNames:
 
     outFilename = "output-" + countryName + ".csv"
     outFile = open(outFilename, "w")
-    outFile.write("Date,Name,Count,Length\n")
+    outFile.write("Date,Country,Name,Count,Length\n")
     outFile.close()
 
 

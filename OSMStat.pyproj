@@ -16,7 +16,7 @@
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <Environment>
     </Environment>
-    <CommandLineArguments>-history "haiti-history.osm"</CommandLineArguments>
+    <CommandLineArguments>-inputfile "history_out.osm"</CommandLineArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -27,6 +27,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="StatDatabase.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GDALWorker.py">
       <SubType>Code</SubType>
     </Compile>
