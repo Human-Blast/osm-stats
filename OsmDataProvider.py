@@ -31,7 +31,7 @@ def GetResponseOverpass(overpassServerUrl, overpassPage, bbox, strDate):
         response = conn.getresponse()
         return response
 
-def GetOverpassOSMData(bbox, strDate, countryname):
+def GetOverpassOSMData(bbox, strDate, postfix):
     s = float(bbox["s"])
     n = float(bbox["n"])
     w = float(bbox["w"])

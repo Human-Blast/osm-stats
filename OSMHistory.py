@@ -158,12 +158,12 @@ class OSMHistoryParser(object):
                 self._isWay = False
                 self._nodeInWayCounter = 0
 
-    def ExtractHistory(self, filename, targetDateStr, countryName):
+    def ExtractHistory(self, filename, targetDateStr, postfix):
         
         self._Reset()
 
         self._targetDate = datetime.datetime.strptime(targetDateStr, "%Y-%m-%dT%H:%M:%SZ")
-        outfilename = "history_out.osm"
+        outfilename = "history_out" + str(postfix) + ".osm"
         print "Dump history to file:", outfilename
         
         p = xml.parsers.expat.ParserCreate()
@@ -187,7 +187,7 @@ class OSMHistoryParser(object):
         return outfilename
     
 
-def ExtractHistory(filename, targetDateStr, countryName):
+def ExtractHistory(filename, targetDateStr, postfix):
     parser = OSMHistoryParser()
-    outfilename = parser.ExtractHistory(filename, targetDateStr, countryName)
+    outfilename = parser.ExtractHistory(filename, targetDateStr, postfix)
     return outfilename

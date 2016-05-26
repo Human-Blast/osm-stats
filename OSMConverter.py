@@ -19,9 +19,8 @@ if os.name == "nt":
     os.environ["PATH"] = os.environ["PATH"] + ";" + osmconvPath + ";"
 
 
-def ConvertFile(bbox, filename, countryName):
-        #outputfile = countryName + "_convert.osm"
-        outputfile = "convert.osm"
+def ConvertFile(bbox, filename, postfix):
+        outputfile = "convert" + str(postfix) + ".osm"
         if os.path.isfile(outputfile):
             os.remove(outputfile) 
 
@@ -110,9 +109,8 @@ def ConvertFile(bbox, filename, countryName):
 
         return outputfile
 
-def ConvertUrl(bbox, url, countryName):
-        #outputfile = countryName + "_convert.osm"
-        outputfile = "convert.osm"
+def ConvertUrl(bbox, url, postfix):
+        outputfile = "convert" + str(postfix) + ".osm"
         if os.path.isfile(outputfile):
             os.remove(outputfile) 
 
