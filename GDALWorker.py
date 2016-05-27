@@ -110,7 +110,7 @@ def AddOneWay(res, feature, len, fieldNames):
     # 1. Some tags (such as junction=roundabout, highway=motorway and others) imply oneway=yes
     # 2. If the oneway restriction is in the opposite direction to the drawn way, the fix in most cases is to turn the way around ("reverse way" tool in the map editors)
     #    and apply oneway=yes. If in a (very) rare case, the direction of the way cannot be changed, you can instead tag it as oneway=-1.
-    if onewayVal == "yes" or onewayVal == "-1" or highwayVal == "motorway":
+    if onewayVal == "yes" or onewayVal == "-1":
         res[StatFieldOneWay].Length += len
         res[StatFieldOneWay].Count += 1   
 
@@ -190,11 +190,8 @@ def GetStatFromLayer(res, layer, highwayTypes, boundGeom):
             langName = langName.replace("name:right:", "")
             langName = langName.replace("name:", "")
             # Roads with Different/Secondry Languages other than local language 
-            # let's look for these secondary languages initially: English Spanish French Mandarin Portuguese
-            if langName in ["en", "es", "fr", "zh", "pt"]:
-                langNames.append(fieldName)
-                langNamesFields.append(fieldName)
-
+            langNames.append(fieldName)
+            langNamesFields.append(fieldName)
 
     for feature in layer:
         highwayVal = feature.GetField("highway")

@@ -40,6 +40,26 @@ def GetStatisticFromFile(filename):
 
         return res
 
+def DumptToCSV():
+    import psycopg2
+
+    conn = psycopg2.connect("postgres://xksrylseratnzb:MLlMNpKQXP-st8vNW3rj0JShmh@ec2-54-235-78-240.compute-1.amazonaws.com:5432/d8hhbphanhc0fd")
+    cur = conn.cursor()    
+    cur.execute("SELECT \"country_code\", \"year\", \"week\", \"kind\", \"count\", \"length\" from road_stats")
+    rows = cur.fetchall()
+    with open("database_dump.csv", 'w') as outFile:
+        for row in rows:
+            outStr = ""
+            for item in row:
+                if(outStr != ""):
+                    outStr += ","
+                outStr += str(item)
+            outStr += "\n"
+            outFile.write(outStr)    
+
+    cur.close()
+    conn.close()
+
 
 def WriteCSVToDatabase(filename):
     import psycopg2

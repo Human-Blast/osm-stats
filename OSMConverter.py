@@ -19,8 +19,11 @@ if os.name == "nt":
     os.environ["PATH"] = os.environ["PATH"] + ";" + osmconvPath + ";"
 
 
-def ConvertFile(bbox, filename, postfix):
-        outputfile = "convert" + str(postfix) + ".osm"
+def ConvertFile(bbox, filename, postfix, usePbf=False):
+        if usePbf:
+            outputfile = "convert" + str(postfix) + ".pbf"
+        else:
+            outputfile = "convert" + str(postfix) + ".osm"
         if os.path.isfile(outputfile):
             os.remove(outputfile) 
 

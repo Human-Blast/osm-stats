@@ -102,6 +102,8 @@ if __name__ == '__main__':
     parser.add_argument("-country")
     parser.add_argument("-pushCSV")
     parser.add_argument("-weeksCount")
+    parser.add_argument("-dumpDatabase")
+    parser.add_argument("-dumpCountry")
     parser.add_argument("-db")
     args = parser.parse_args(sys.argv[1:])
 
@@ -115,6 +117,20 @@ if __name__ == '__main__':
 
     if args.pushCSV != "" and args.pushCSV != None:
         StatDatabase.WriteCSVToDatabase(args.pushCSV)
+        sys.exit(0)
+
+    if args.dumpDatabase != "" and args.dumpDatabase != None:
+        StatDatabase.DumptToCSV()
+        sys.exit(0)
+
+    if args.dumpCountry != "" and args.dumpCountry != None:
+        if args.country == "" or args.country == None:
+            raise "Country name not set"
+        print "Start extract " + args.country + " OSM data from file: " + args.dumpCountry
+        bbox = GDALWorker.GetQueryBox(shpBoundFilename, args.country)
+        print "Query box:", bbox
+        fOutConvertName = OSMConverter.ConvertFile(bbox, args.dumpCountry, "", True)
+        print "Dump success : " + fOutConvertName
         sys.exit(0)
 
     _lockCSV = multiprocessing.Lock()
@@ -157,10 +173,10 @@ if __name__ == '__main__':
             # first clip and convert file
             if args.history.startswith("http://"):
                 print "Start convert OSM data from history url: " + args.history
-                fOutConvertName = OSMConverter.ConvertUrl(bbox, args.history, countryName)
+                fOutConvertName = OSMConverter.ConvertUrl(bbox, args.history, "")
             else:
                 print "Start convert OSM data from history file: " + args.history
-                fOutConvertName = OSMConverter.ConvertFile(bbox, args.history, countryName)
+                fOutConvertName = OSMConverter.ConvertFile(bbox, args.history, "")
 
             # replace argument
             args.history = fOutConvertName
