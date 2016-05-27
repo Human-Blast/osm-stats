@@ -103,6 +103,8 @@ if __name__ == '__main__':
     parser.add_argument("-pushCSV")
     parser.add_argument("-weeksCount")
     parser.add_argument("-dumpDatabase")
+    parser.add_argument("-removeFromDatabase")
+    parser.add_argument("-year")
     parser.add_argument("-dumpCountry")
     parser.add_argument("-db")
     args = parser.parse_args(sys.argv[1:])
@@ -119,6 +121,14 @@ if __name__ == '__main__':
         StatDatabase.WriteCSVToDatabase(args.pushCSV)
         sys.exit(0)
 
+    if args.removeFromDatabase != "" and args.removeFromDatabase != None:
+        if args.country == "" or args.country == None:
+            raise "Country name not set"
+        countryShortName = GDALWorker.GetShortCountryName(shpBoundFilename, args.country)
+        print "Start remove country : " + countryShortName
+        StatDatabase.RemoveFromDatabase(countryShortName, args.year)
+        sys.exit(0)
+
     if args.dumpDatabase != "" and args.dumpDatabase != None:
         StatDatabase.DumptToCSV()
         sys.exit(0)
@@ -132,6 +142,8 @@ if __name__ == '__main__':
         fOutConvertName = OSMConverter.ConvertFile(bbox, args.dumpCountry, "", True)
         print "Dump success : " + fOutConvertName
         sys.exit(0)
+
+
 
     _lockCSV = multiprocessing.Lock()
 
