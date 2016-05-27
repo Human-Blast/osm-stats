@@ -85,6 +85,7 @@ def WriteCSVToDatabase(filename):
         key = str(item.Country) + str(item.Year) + str(item.Week) + str(item.Kind)
         statKeysCSV[key] = True
 
+    print "Start push CSV to database : ", filename
 
     conn = psycopg2.connect("postgres://xksrylseratnzb:MLlMNpKQXP-st8vNW3rj0JShmh@ec2-54-235-78-240.compute-1.amazonaws.com:5432/d8hhbphanhc0fd")
     cur = conn.cursor()    
@@ -103,3 +104,5 @@ def WriteCSVToDatabase(filename):
     conn.commit()
     cur.close()
     conn.close()
+
+    print "Push complete"
