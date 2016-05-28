@@ -19,7 +19,7 @@ if os.name == "nt":
     os.environ["PATH"] = os.environ["PATH"] + ";" + osmconvPath + ";"
 
 
-def ConvertFile(bbox, filename, postfix, usePbf=False):
+def ConvertFile(spatPoly, filename, postfix, usePbf=False):
         if usePbf:
             outputfile = "convert" + str(postfix) + ".pbf"
         else:
@@ -28,7 +28,9 @@ def ConvertFile(bbox, filename, postfix, usePbf=False):
             os.remove(outputfile) 
 
         if os.path.isfile(filename) == False:
-            raise "File not found:" + str(filename)
+            err = "File not found:" + str(filename)
+            print err
+            raise err
 
         fname, file_extension = os.path.splitext(filename)
         isNeedDecompress = False
@@ -37,22 +39,15 @@ def ConvertFile(bbox, filename, postfix, usePbf=False):
         elif file_extension == ".osm":
             return filename # no convert required
 
-        xmin = bbox["w"]
-        ymin = bbox["s"]
-        xmax = bbox["e"]
-        ymax = bbox["n"]
-
         appName = ""
         if os.name == "nt":
             appName = "osmconvert"
         else :
             appName = "./osmconvert64"
 
-        boxStr = str(xmin) + "," + str(ymin) + "," + str(xmax) + "," + str(ymax)
-        #-b xmin ymin xmax ymax
         convertPipe = subprocess.Popen([appName, 
              "-", 
-             "-b=" + boxStr,
+             "-B=" + spatPoly,
              "-o=" + outputfile, 
              ], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
                 
@@ -112,15 +107,10 @@ def ConvertFile(bbox, filename, postfix, usePbf=False):
 
         return outputfile
 
-def ConvertUrl(bbox, url, postfix):
+def ConvertUrl(spatPoly, url, postfix):
         outputfile = "convert" + str(postfix) + ".osm"
         if os.path.isfile(outputfile):
             os.remove(outputfile) 
-
-        xmin = bbox["w"]
-        ymin = bbox["s"]
-        xmax = bbox["e"]
-        ymax = bbox["n"]
 
         parsed_uri = urlparse( url )
         serverUrl = '{uri.netloc}'.format(uri=parsed_uri)
@@ -132,11 +122,10 @@ def ConvertUrl(bbox, url, postfix):
         else :
             appName = "./osmconvert64"
 
-        boxStr = str(xmin) + "," + str(ymin) + "," + str(xmax) + "," + str(ymax)
         #-b xmin ymin xmax ymax
         convertPipe = subprocess.Popen([appName, 
              "-", 
-             "-b=" + boxStr,
+             "-B=" + spatPoly,
              "-o=" + outputfile, 
              ], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 

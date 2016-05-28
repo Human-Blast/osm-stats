@@ -19,7 +19,7 @@ import StatDatabase
 #
 
 # Parameters of date region
-updateDate = datetime.date(2016, 5, 16)
+updateDate = datetime.date.today();
 countOfWeeks = 1
 
 # boundary of countries in shape format
@@ -31,8 +31,6 @@ highwayTypes = ["motorway", "secondary",
                 "road", "path", "service",
                 "living_street", "track", "raceway"
                 ]
-
-countryNames = ["Haiti"]
 # End of applications parameters
 
 
@@ -109,6 +107,8 @@ if __name__ == '__main__':
     parser.add_argument("-db")
     args = parser.parse_args(sys.argv[1:])
 
+    countryNames = GDALWorker.GetCountryNames(shpBoundFilename)
+
 
     if args.weeksCount != "" and args.weeksCount != None:
         countOfWeeks = int(args.weeksCount)
@@ -137,9 +137,9 @@ if __name__ == '__main__':
         if args.country == "" or args.country == None:
             raise "Country name not set"
         print "Start extract " + args.country + " OSM data from file: " + args.dumpCountry
-        bbox = GDALWorker.GetQueryBox(shpBoundFilename, args.country)
+        spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, args.country)
         print "Query box:", bbox
-        fOutConvertName = OSMConverter.ConvertFile(bbox, args.dumpCountry, "", True)
+        fOutConvertName = OSMConverter.ConvertFile(spatPoly, args.dumpCountry, "", True)
         print "Dump success : " + fOutConvertName
         sys.exit(0)
 
@@ -156,17 +156,12 @@ if __name__ == '__main__':
         print "Start collect data for country : " + countryName
         print "=============================="
 
-        bbox = GDALWorker.GetQueryBox(shpBoundFilename, countryName)
-        print "Query box:", bbox
-        #to test only:
-        #bbox = {"s": "17.8951", "w": "-72.2948", "n": "18.2313", "e": "-70.9827"}
-
+        spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
 
         outFilename = "output-" + countryName + ".csv"
         outFile = open(outFilename, "w")
         outFile.write("Date,Country,Name,Count,Length\n")
         outFile.close()
-
 
         if args.overpass == "true":
             for i in range(0, countOfWeeks):
@@ -185,10 +180,10 @@ if __name__ == '__main__':
             # first clip and convert file
             if args.history.startswith("http://"):
                 print "Start convert OSM data from history url: " + args.history
-                fOutConvertName = OSMConverter.ConvertUrl(bbox, args.history, "")
+                fOutConvertName = OSMConverter.ConvertUrl(spatPoly, args.history, "")
             else:
                 print "Start convert OSM data from history file: " + args.history
-                fOutConvertName = OSMConverter.ConvertFile(bbox, args.history, "")
+                fOutConvertName = OSMConverter.ConvertFile(spatPoly, args.history, "")
 
             # replace argument
             args.history = fOutConvertName

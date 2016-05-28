@@ -91,6 +91,71 @@ def GetQueryBox(shpBoundFilename, countryName):
         raise "Country not found : " + countryName
     return {"w": str(env[0]), "e": str(env[1]), "s": str(env[2]), "n": str(env[3])}
 
+def CreatePolyFile(shpBoundFilename, countryName):
+    dsBound = ogr.Open(shpBoundFilename)  
+    lyrBound = dsBound.GetLayer()
+    outfilename = None
+    for feature in lyrBound:
+        # get the input geometry
+        geom = feature.GetGeometryRef()
+        name = feature.GetField("NAME")
+        if name.lower() == countryName.lower():
+            shortName = feature.GetField("ISO2")
+            outfilename = "spat.poly"
+            with open(outfilename, "w") as fp:
+                fp.write(str(shortName) + "\n")
+
+                geomCount = geom.GetGeometryCount()
+                if geomCount == 0:
+                    fp.write("1\n")
+                    pntsCount = geom.GetPointCount()
+                    for idx in range(0, pntsCount):
+                        x = geom.GetX(idx)
+                        y = geom.GetY(idx)
+                        pntStr = "{0:.4e} {1:.4e}\n".format(x, y)
+                        fp.write(pntStr)
+                    fp.write("END\n")
+                else:
+                    for idxGeom in range(0, geomCount):
+                        fp.write(str(idxGeom + 1) + "\n")
+                        geomSub = geom.GetGeometryRef(idxGeom)
+                        geomTypeName = geomSub.GetGeometryName()
+                        if geomTypeName != "POLYGON":
+                            print "Found invalid geometry : ", geomTypeName 
+                            raise "Found invalid geometry"
+                        # Get ring
+                        geomSub = geomSub.GetGeometryRef(0)
+                        # iterate via points
+                        pntsCount = geomSub.GetPointCount()
+                        for idx in range(0, pntsCount):
+                            x = geomSub.GetX(idx)
+                            y = geomSub.GetY(idx)
+                            pntStr = "    {0:.6E}   {1:.6E}\n".format(x, y)
+                            fp.write(pntStr)
+                        fp.write("END\n")
+
+
+                fp.write("END\n")
+
+            break            
+    if outfilename == None:
+        raise "Country not found : " + countryName
+    return outfilename
+
+def GetCountryNames(shpBoundFilename):
+
+    countryNames = []
+
+    dsBound = ogr.Open(shpBoundFilename)  
+    lyrBound = dsBound.GetLayer()
+    env = None
+    for feature in lyrBound:
+        # get the input geometry
+        geom = feature.GetGeometryRef()
+        name = feature.GetField("NAME")
+        countryNames.append(name)
+
+    return countryNames
 
 # Add statistic for highway
 def AddHighways(res, highwayTypes, feature, len):
