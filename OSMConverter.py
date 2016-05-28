@@ -107,8 +107,12 @@ def ConvertFile(spatPoly, filename, postfix, usePbf=False):
 
         return outputfile
 
-def ConvertUrl(spatPoly, url, postfix):
-        outputfile = "convert" + str(postfix) + ".osm"
+def ConvertUrl(spatPoly, url, postfix, usePbf=False):
+        if usePbf:
+            outputfile = "convert" + str(postfix) + ".pbf"
+        else:
+            outputfile = "convert" + str(postfix) + ".osm"
+
         if os.path.isfile(outputfile):
             os.remove(outputfile) 
 
@@ -122,7 +126,6 @@ def ConvertUrl(spatPoly, url, postfix):
         else :
             appName = "./osmconvert64"
 
-        #-b xmin ymin xmax ymax
         convertPipe = subprocess.Popen([appName, 
              "-", 
              "-B=" + spatPoly,

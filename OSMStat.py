@@ -90,6 +90,14 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
 
     lockCSV.release()
 
+def ConvertFile(countryName, filename, postfix, spatPoly , usePbf):
+        # first clip and convert file
+        if filename.startswith("http://"):
+            print "Start convert OSM data from history url: " + filename
+            fOutConvertName = OSMConverter.ConvertUrl(spatPoly, filename, postfix, True)
+        else:
+            print "Start convert OSM data from history file: " + filename
+            fOutConvertName = OSMConverter.ConvertFile(spatPoly, filename, postfix, True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='osm-stat')
@@ -150,13 +158,43 @@ if __name__ == '__main__':
     
     print "Count of weeks", countOfWeeks
 
+    # Extract data for countries
+    historyConvertFiles = {}
+    if args.history != None and args.history != "":
+        threadCount = 8
+        threads = []
+
+        for countryName in countryNames:
+            spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
+
+            postfix = str(len(threads) + 1)
+            fOutConvertName = "convert" + str(postfix) + ".pbf"
+            th = multiprocessing.Process(target=ConvertFile, args=(countryName, args.history, postfix, spatPoly, True))
+            th.start()
+            threads.append(th)
+            
+            if len(threads) >= threadCount:
+                for th in threads:
+                    th.join()
+                    if th.exitcode != 0:
+                        raise "Convert process failed"
+                    threads = []
+
+            historyConvertFiles[countryName] = fOutConvertName
+
+        # wait latest threads
+        if len(threads) > 0:
+            for th in threads:
+                th.join()
+                if th.exitcode != 0:
+                    raise "Convert process failed"
+            threads = []
 
     for countryName in countryNames:
         print "=============================="
         print "Start collect data for country : " + countryName
         print "=============================="
 
-        spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
 
         outFilename = "output-" + countryName + ".csv"
         outFile = open(outFilename, "w")
@@ -177,13 +215,7 @@ if __name__ == '__main__':
             strDate = OSMDateInfo.GetDateFromUrl(args.url)
             RunSinlge(strDate, "", _lockCSV, args, countryName, "")
         elif args.history != None:
-            # first clip and convert file
-            if args.history.startswith("http://"):
-                print "Start convert OSM data from history url: " + args.history
-                fOutConvertName = OSMConverter.ConvertUrl(spatPoly, args.history, "")
-            else:
-                print "Start convert OSM data from history file: " + args.history
-                fOutConvertName = OSMConverter.ConvertFile(spatPoly, args.history, "")
+            fOutConvertName = historyConvertFiles[countryName]
 
             enableThreading = (countOfWeeks >= 3);
             threadCount = 8
@@ -203,6 +235,8 @@ if __name__ == '__main__':
                 if len(threads) >= threadCount:
                     for th in threads:
                         th.join()
+                        if th.exitcode != 0:
+                            raise "Extract process failed"
                     threads = []
 
                 # go to next month  
@@ -212,6 +246,8 @@ if __name__ == '__main__':
             if len(threads) > 0:
                  for th in threads:
                      th.join()
+                     if th.exitcode != 0:
+                          raise "Extract process failed"
         else:
             raise "Not supported arguments"
 

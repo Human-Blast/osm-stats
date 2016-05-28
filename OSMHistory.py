@@ -8,7 +8,7 @@ import bz2
 import os
 from urlparse import urlparse
 import xml.parsers.expat
-
+import subprocess
 
 class OSMHistoryParser(object):
 
@@ -163,19 +163,35 @@ class OSMHistoryParser(object):
         self._Reset()
 
         self._targetDate = datetime.datetime.strptime(targetDateStr, "%Y-%m-%dT%H:%M:%SZ")
-        outfilename = "history_out" + str(postfix) + ".osm"
+        outfilename = "history_out" + str(postfix) + ".pbf"
         print "Dump history to file:", outfilename
+
+        appName = ""
+        if os.name == "nt":
+            appName = "osmconvert"
+        else :
+            appName = "./osmconvert64"
+
+        readPipe = subprocess.Popen([appName, 
+             filename,
+             ], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         
+        writePipe = subprocess.Popen([appName, 
+             "-",
+             "-o=" + outfilename
+             ], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+
+
         p = xml.parsers.expat.ParserCreate()
         p.StartElementHandler = self.start_element
         p.EndElementHandler = self.end_element
 
         self._nodeCounter = 1
-        self._outfile = open(outfilename, "w")
-        with self._outfile:    
+        self._outfile = writePipe.stdin
+        with self._outfile:
             self._outfile.write("<osm timestamp='{0}'>\n".format(targetDateStr)) 
-            with open(filename, "r") as fpR:
-                p.ParseFile(fpR)
+            
+            p.ParseFile(readPipe.stdout)
             
             # check if not yet write
             if self._outStr != "":
@@ -183,6 +199,11 @@ class OSMHistoryParser(object):
                 self._outfile.write(self._outStr)
 
             self._outfile.write("</osm>")
+
+        writePipe.stdin.close()
+        writePipe.wait()
+        
+        print "history extract done"
 
         return outfilename
     
