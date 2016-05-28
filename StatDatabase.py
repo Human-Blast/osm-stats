@@ -30,7 +30,7 @@ def GetStatisticFromFile(filename):
                 dateStr = str(row[0])
                 date = datetime.datetime.strptime(dateStr, "%d %B %Y").date()
                 statItem.Year = date.year
-                statItem.Week = int(date.strftime("%W"))
+                statItem.Week = date.isocalendar()[1];
                 statItem.Country = str(row[1])
                 statItem.Kind = str(row[2])
                 statItem.Count = int(row[3])
@@ -85,6 +85,7 @@ def WriteCSVToDatabase(filename):
         key = str(item.Country) + str(item.Year) + str(item.Week) + str(item.Kind)
         statKeysCSV[key] = True
 
+    print "Start push CSV to database : ", filename
 
     conn = psycopg2.connect("postgres://xksrylseratnzb:MLlMNpKQXP-st8vNW3rj0JShmh@ec2-54-235-78-240.compute-1.amazonaws.com:5432/d8hhbphanhc0fd")
     cur = conn.cursor()    
@@ -103,3 +104,5 @@ def WriteCSVToDatabase(filename):
     conn.commit()
     cur.close()
     conn.close()
+
+    print "Push complete"
