@@ -38,7 +38,7 @@ def MoveToNextWeek(sourcedate):
         d = sourcedate - datetime.timedelta(days=7)
         return d
 
-def RunSinlge(strDate, postfix, lockCSV, args, countryName):
+def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
     lockCSV.acquire()
     date = datetime.datetime.strptime(strDate, "%Y-%m-%dT%H:%M:%SZ")
     csvDateStr = date.strftime("%d %B %Y")
@@ -62,10 +62,10 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName):
         filenames.append(fName)
     elif args.history != None:
         lockCSV.acquire()
-        print "Start extract OSM data from history file: " + args.history
+        print "Start extract OSM data from history file: " + historyfilename
         lockCSV.release()
         
-        fName = OSMHistory.ExtractHistory(args.history, strDate, postfix)
+        fName = OSMHistory.ExtractHistory(historyfilename, strDate, postfix)
         filenames.append(fName)
     else:
         raise "not supported"
@@ -167,15 +167,15 @@ if __name__ == '__main__':
             for i in range(0, countOfWeeks):
                 strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
                 print "Extract date :", strDate
-                RunSinlge(strDate, "", _lockCSV, countryName)
+                RunSinlge(strDate, "", _lockCSV, countryName, "")
                 # go to next month
                 updateDate = MoveToNextWeek(updateDate)    
         elif args.inputfile != None:
             strDate = OSMDateInfo.GetDateFromFile(args.inputfile)    
-            RunSinlge(strDate, "", _lockCSV, args)
+            RunSinlge(strDate, "", _lockCSV, args, "", "")
         elif args.url != None:
             strDate = OSMDateInfo.GetDateFromUrl(args.url)
-            RunSinlge(strDate, "", _lockCSV, args, countryName)
+            RunSinlge(strDate, "", _lockCSV, args, countryName, "")
         elif args.history != None:
             # first clip and convert file
             if args.history.startswith("http://"):
@@ -184,9 +184,6 @@ if __name__ == '__main__':
             else:
                 print "Start convert OSM data from history file: " + args.history
                 fOutConvertName = OSMConverter.ConvertFile(spatPoly, args.history, "")
-
-            # replace argument
-            args.history = fOutConvertName
 
             enableThreading = (countOfWeeks >= 3);
             threadCount = 8
@@ -197,11 +194,11 @@ if __name__ == '__main__':
                 print "Extract date :", strDate
                 if enableThreading:
                     postfix = str(len(threads) + 1)
-                    th = multiprocessing.Process(target=RunSinlge, args=(strDate, postfix, _lockCSV, args, countryName))
+                    th = multiprocessing.Process(target=RunSinlge, args=(strDate, postfix, _lockCSV, args, countryName, fOutConvertName))
                     th.start()
                     threads.append(th)
                 else:
-                    RunSinlge(strDate, "", _lockCSV, args, countryName)
+                    RunSinlge(strDate, "", _lockCSV, args, countryName, fOutConvertName)
 
                 if len(threads) >= threadCount:
                     for th in threads:

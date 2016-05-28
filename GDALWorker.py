@@ -106,30 +106,52 @@ def CreatePolyFile(shpBoundFilename, countryName):
                 fp.write(str(shortName) + "\n")
 
                 geomCount = geom.GetGeometryCount()
-                if geomCount == 0:
+                geomTypeNameMain = geom.GetGeometryName()
+
+                if geomTypeNameMain == "POLYGON":
                     fp.write("1\n")
-                    pntsCount = geom.GetPointCount()
+
+                    geom = geom.ConvexHull()
+
+                    # Get ring
+                    geomRing = geom.GetGeometryRef(0)
+                    pntsCount = geomRing.GetPointCount()
+                    if pntsCount > 1000:
+                        geom = geom.ConvexHull()
+                        geomRing = geom.GetGeometryRef(0)
+                        pntsCount = geomRing.GetPointCount()
+
                     for idx in range(0, pntsCount):
-                        x = geom.GetX(idx)
-                        y = geom.GetY(idx)
+                        x = geomRing.GetX(idx)
+                        y = geomRing.GetY(idx)
                         pntStr = "{0:.4e} {1:.4e}\n".format(x, y)
                         fp.write(pntStr)
                     fp.write("END\n")
                 else:
                     for idxGeom in range(0, geomCount):
-                        fp.write(str(idxGeom + 1) + "\n")
                         geomSub = geom.GetGeometryRef(idxGeom)
                         geomTypeName = geomSub.GetGeometryName()
                         if geomTypeName != "POLYGON":
                             print "Found invalid geometry : ", geomTypeName 
                             raise "Found invalid geometry"
+                        
+                        area = geomSub.Area()
+                        if area < 0.5:
+                            continue #ignore small areas
+
+                        fp.write(str(idxGeom + 1) + "\n")
+
+                        geomSubNew = geomSub.ConvexHull()
                         # Get ring
-                        geomSub = geomSub.GetGeometryRef(0)
-                        # iterate via points
-                        pntsCount = geomSub.GetPointCount()
+                        geomRing = geomSubNew.GetGeometryRef(0)
+                        pntsCount = geomRing.GetPointCount()
+
+                        if pntsCount == 0:
+                            raise "Found empty polygon"
+
                         for idx in range(0, pntsCount):
-                            x = geomSub.GetX(idx)
-                            y = geomSub.GetY(idx)
+                            x = geomRing.GetX(idx)
+                            y = geomRing.GetY(idx)
                             pntStr = "    {0:.6E}   {1:.6E}\n".format(x, y)
                             fp.write(pntStr)
                         fp.write("END\n")
