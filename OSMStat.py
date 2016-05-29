@@ -58,7 +58,11 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
         filenames.append(fName)
     elif args.inputfile != None:
         print "Parse OSM data 'inputfile' " + args.inputfile        
-        fName = OSMConverter.ConvertFile(bbox, args.inputfile, postfix)
+        spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
+        fName = OSMConverter.ConvertFile(spatPoly, args.inputfile, postfix, True)
+        #OSMConverter.ConvertFile(bbox, args.inputfile, postfix)
+        
+        
         filenames.append(fName)
     elif args.history != None:
         lockCSV.acquire()
@@ -167,7 +171,7 @@ if __name__ == '__main__':
         for countryName in countryNames:
             spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
 
-            postfix = str(len(threads) + 1)
+            postfix = str(countryName)
             fOutConvertName = "convert" + str(postfix) + ".pbf"
             th = multiprocessing.Process(target=ConvertFile, args=(countryName, args.history, postfix, spatPoly, True))
             th.start()
@@ -209,8 +213,9 @@ if __name__ == '__main__':
                 # go to next month
                 updateDate = MoveToNextWeek(updateDate)    
         elif args.inputfile != None:
-            strDate = OSMDateInfo.GetDateFromFile(args.inputfile)    
-            RunSinlge(strDate, "", _lockCSV, args, "", "")
+            #strDate = OSMDateInfo.GetDateFromFile(args.inputfile)    
+            strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
+            RunSinlge(strDate, "", _lockCSV, args, countryName, "")
         elif args.url != None:
             strDate = OSMDateInfo.GetDateFromUrl(args.url)
             RunSinlge(strDate, "", _lockCSV, args, countryName, "")

@@ -28,7 +28,7 @@ class OSMHistoryParser(object):
 
     _outStr = ""
 
-    _prevId = ""
+    _prevId = 0
 
     _prevType = ""
 
@@ -44,10 +44,10 @@ class OSMHistoryParser(object):
         self._targetDate = None
         self._idsNode = {}
         self._idsValidation = {}
-        self._nodeCounter = 1
-        self._waysCounter = 1
+        self._nodeCounter = long(1)
+        self._waysCounter = long(1)
         self._prevElementDate = None
-        self._prevId = ""
+        self._prevId = 0
         self._prevType = ""
         self._nodeInWayCounter = 0
 
@@ -82,23 +82,23 @@ class OSMHistoryParser(object):
             if date > self._targetDate:
                 return# Skip futures dates
 
-            elId = attrib["id"]
+            elId = long(attrib["id"])
             if self._prevId != elId or self._prevType != name:
                 if self._outStr != "":
                     # Validate result
-                    key = self._prevType + self._prevId
-                    if self._idsValidation.has_key(key):
-                        errStr = "Found duplicate id:" + str(self._prevId) + " " + str(self._prevType)
-                        print errStr
-                        raise errStr
-                    self._idsValidation[key] = True
+                    #key = self._prevType + self._prevId
+                    #if self._idsValidation.has_key(key):
+                    #    errStr = "Found duplicate id:" + str(self._prevId) + " " + str(self._prevType)
+                    #    print errStr
+                    #    raise errStr
+                    #self._idsValidation[key] = True
 
                     self._outfile.write(self._outStr); 
                     self._outStr = ""
 
                     if self._prevType == "node":
                         # Generate increasing node id
-                        self._idsNode[self._prevId] = str(self._nodeCounter)
+                        self._idsNode[self._prevId] = self._nodeCounter
                         self._nodeCounter += 1
                     elif self._prevType == "way":
                         self._waysCounter += 1
@@ -117,12 +117,12 @@ class OSMHistoryParser(object):
 
 
         if name == "node":            
-            nodeId = str(self._nodeCounter)
+            nodeId = self._nodeCounter
 
             self._outStr = "<node id=\"{0}\" lat=\"{1}\" lon=\"{2}\" timestamp=\"{3}\" />\n".format(nodeId, attrib["lat"], attrib["lon"], dateStr)
         elif name == "way":            
             # Generate increasing wys id
-            wayId = str(self._waysCounter)
+            wayId = self._waysCounter
 
             self._outStr += "<way id=\"{0}\" timestamp=\"{1}\">\n".format(wayId, dateStr)
             self._isWay = True
@@ -131,7 +131,7 @@ class OSMHistoryParser(object):
             if self._nodeInWayCounter >= 1999: # limit of GDAL
                 return# Skip nodes to fix Too many nodes referenced in way
 
-            refId = attrib["ref"]
+            refId = long(attrib["ref"])
             # Generate increasing node id
             if self._idsNode.has_key(refId):
                 refId = self._idsNode[refId]
