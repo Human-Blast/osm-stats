@@ -289,8 +289,8 @@ def GetStatFromLayer(res, layer, highwayTypes, boundGeom):
         geom = feature.GetGeometryRef()
         # reproject the geometry to meters
         geom.Transform(coordTrans)
-        # get length in meters
-        len = geom.Length()
+        # get length in miles
+        len = geom.Length() * 0.000621371
 
         AddHighways(res, highwayTypes, feature, len)
         AddOneWay(res, feature, len, fieldNames)

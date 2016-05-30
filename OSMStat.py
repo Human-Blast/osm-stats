@@ -10,6 +10,7 @@ import OsmDataProvider
 import GDALWorker
 import OSMDateInfo
 import OSMHistory
+import OSMConvertStat
 import OSMConverter
 import StatDatabase
 
@@ -46,6 +47,8 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
     lockCSV.release()
 
     filenames = []
+    res = {}
+
 
     # first download OSM data 
     if args.overpass == "true":
@@ -56,29 +59,29 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
         print "Start download OSM data 'url' " + args.url
         fName = OSMConverter.ConvertUrl(bbox, args.url, postfix)
         filenames.append(fName)
+
+        print "Start calculate statistic..."
+        res = GDALWorker.GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName)
     elif args.inputfile != None:
         print "Parse OSM data 'inputfile' " + args.inputfile        
         spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
         fName = OSMConverter.ConvertFile(spatPoly, args.inputfile, postfix, True)
-        #OSMConverter.ConvertFile(bbox, args.inputfile, postfix)
-        
-        
         filenames.append(fName)
+
+        print "Start calculate statistic..."
+        res = GDALWorker.GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName)
     elif args.history != None:
         lockCSV.acquire()
         print "Start extract OSM data from history file: " + historyfilename
         lockCSV.release()
         
-        fName = OSMHistory.ExtractHistory(historyfilename, strDate, postfix)
-        filenames.append(fName)
+        res = OSMConvertStat.GetStatistic(historyfilename, strDate, highwayTypes, postfix)
     else:
         raise "not supported"
 
 
     lockCSV.acquire()
     
-    print "Start calculate statistic..."
-    res = GDALWorker.GetStatistic(filenames, highwayTypes, shpBoundFilename, countryName)
 
     print "Write to CSV..."
     outFile = open("output-" + countryName + ".csv", "a")
@@ -88,22 +91,25 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
         outStr += "," + countryShortName
         outStr += "," + key
         outStr += "," + str(value.Count)
-        milesLength = round(value.Length * 0.000621371, 2)# convert meters to milles
+        milesLength = round(value.Length, 2)
         outStr += "," + str(milesLength) + "\n"
         outFile.write(outStr)    
 
     lockCSV.release()
 
 def ConvertFile(countryName, filename, postfix, spatPoly , usePbf):
-        # first clip and convert file
-        if filename.startswith("http://"):
-            print "Start convert OSM data from history url: " + filename
-            fOutConvertName = OSMConverter.ConvertUrl(spatPoly, filename, postfix, True)
-        else:
-            print "Start convert OSM data from history file: " + filename
-            fOutConvertName = OSMConverter.ConvertFile(spatPoly, filename, postfix, True)
+    # first clip and convert file
+    if filename.startswith("http://"):
+        print "Start convert OSM data from history url: " + filename
+        fOutConvertName = OSMConverter.ConvertUrl(spatPoly, filename, postfix, True)
+    else:
+        print "Start convert OSM data from history file: " + filename
+        fOutConvertName = OSMConverter.ConvertFile(spatPoly, filename, postfix, True)
 
 if __name__ == '__main__':
+
+    startTime = datetime.datetime.now()
+
     parser = argparse.ArgumentParser(prog='osm-stat')
     parser.add_argument("-inputfile")
     parser.add_argument("-url")
@@ -117,6 +123,7 @@ if __name__ == '__main__':
     parser.add_argument("-year")
     parser.add_argument("-dumpCountry")
     parser.add_argument("-db")
+    parser.add_argument("-extractsReady")
     args = parser.parse_args(sys.argv[1:])
 
     countryNames = GDALWorker.GetCountryNames(shpBoundFilename)
@@ -156,7 +163,6 @@ if __name__ == '__main__':
         sys.exit(0)
 
 
-
     _lockCSV = multiprocessing.Lock()
 
     
@@ -170,12 +176,14 @@ if __name__ == '__main__':
 
         for countryName in countryNames:
             spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
-
+            
             postfix = str(countryName)
             fOutConvertName = "convert" + str(postfix) + ".pbf"
-            th = multiprocessing.Process(target=ConvertFile, args=(countryName, args.history, postfix, spatPoly, True))
-            th.start()
-            threads.append(th)
+
+            if args.extractsReady == None:
+                th = multiprocessing.Process(target=ConvertFile, args=(countryName, args.history, postfix, spatPoly, True))
+                th.start()
+                threads.append(th)
             
             if len(threads) >= threadCount:
                 for th in threads:
@@ -198,6 +206,8 @@ if __name__ == '__main__':
         print "=============================="
         print "Start collect data for country : " + countryName
         print "=============================="
+
+        startTimeCountry = datetime.datetime.now()
 
 
         outFilename = "output-" + countryName + ".csv"
@@ -261,6 +271,12 @@ if __name__ == '__main__':
             StatDatabase.WriteCSVToDatabase(outFilename)
 
         print "Done country : " + str(countryName)
+        
+        executeTimeCountry = datetime.datetime.now() - startTime
+        print "ExecuteTime Country (minutes):", round(executeTimeCountry.seconds/60)
 
+
+    executeTime = datetime.datetime.now() - startTime
+    print "ExecuteTime(minutes):", round(executeTime.seconds/60)
 
     print "Done success"
