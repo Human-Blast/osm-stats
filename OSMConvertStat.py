@@ -75,6 +75,9 @@ def GetStatisticFromFile(filename, highwayTypes):
 def GetStatistic(filename, strDate, highwayTypes, postfix):
     outputfile = "convstat_" + postfix + ".csv"
 
+    if os.path.isfile(outputfile):
+         os.remove(outputfile) 
+
     # "test.pbf" --out-statistics --stat-timestamp="2016-05-31T23:59:30Z" -tagsStats="highway,highway,oneway" -tagsVals="primary,motorway,yes" -statfile="out.csv"
     appName = ""
     if os.name == "nt":
@@ -115,11 +118,6 @@ def GetStatistic(filename, strDate, highwayTypes, postfix):
             ], stdout=sys.stdout)
     retcode = convertPipe.wait()
 
-    #convertPipe = subprocess.Popen([appName, 
-    #        filename,
-    #        "-o=test123.pbf"             
-    #        ], stdout=sys.stdout)
-    
     retcode = convertPipe.wait()
     if retcode != 0:
         raise "Can't extract statistic"

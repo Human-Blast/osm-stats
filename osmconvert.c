@@ -629,6 +629,10 @@ double distanceLatLonInMiles(double lat1, double lon1, double lat2, double lon2)
 	dist = acos(dist);
 	dist = rad2deg(dist);
 	dist = dist * 60 * 1.1515;
+	if (isnan(dist))
+	{
+		dist = 0;
+	}
 	return (dist);
 }
 
