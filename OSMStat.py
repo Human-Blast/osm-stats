@@ -202,42 +202,56 @@ if __name__ == '__main__':
                     raise "Convert process failed"
             threads = []
 
-    for countryName in countryNames:
-        print "=============================="
-        print "Start collect data for country : " + countryName
-        print "=============================="
-
-        startTimeCountry = datetime.datetime.now()
-
-
-        outFilename = "output-" + countryName + ".csv"
-        outFile = open(outFilename, "w")
-        outFile.write("Date,Country,Name,Count,Length\n")
-        outFile.close()
-
-        if args.overpass == "true":
+    if args.overpass == "true":
+        for countryName in countryNames:
             for i in range(0, countOfWeeks):
                 strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
                 print "Extract date :", strDate
                 RunSinlge(strDate, "", _lockCSV, countryName, "")
                 # go to next month
-                updateDate = MoveToNextWeek(updateDate)    
-        elif args.inputfile != None:
+                updateDate = MoveToNextWeek(updateDate)
+
+    elif args.inputfile != None:
+        for countryName in countryNames:
             strDate = OSMDateInfo.GetDateFromFile(args.inputfile)    
             RunSinlge(strDate, "", _lockCSV, args, countryName, "")
-        elif args.url != None:
+
+    elif args.url != None:
+        for countryName in countryNames:
             strDate = OSMDateInfo.GetDateFromUrl(args.url)
             RunSinlge(strDate, "", _lockCSV, args, countryName, "")
-        elif args.history != None:
-            fOutConvertName = historyConvertFiles[countryName]
 
-            enableThreading = (countOfWeeks >= 3);
-            threadCount = 2
+    elif args.history != None:
+        # Create CSVs
+        for countryName in countryNames:
+            outFilename = "output-" + countryName + ".csv"
+            outFile = open(outFilename, "w")
+            outFile.write("Date,Country,Name,Count,Length\n")
+            outFile.close()
+
+
+        for i in range(0, countOfWeeks):
+            strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            # go to next month  
+            updateDate = MoveToNextWeek(updateDate)
+
+            print "=============================="
+            print "Extract date :", strDate
+            print "=============================="
+
+            startTimeDate = datetime.datetime.now()
+
+            enableThreading = (len(countryNames) >= 3);
+            threadCount = 8
             threads = []
 
-            for i in range(0, countOfWeeks):
-                strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
-                print "Extract date :", strDate
+            for countryName in countryNames:
+                print "Start collect data for country : " + countryName
+                outFilename = "output-" + countryName + ".csv"
+
+                fOutConvertName = historyConvertFiles[countryName]
+
                 if enableThreading:
                     postfix = str(len(threads) + 1)
                     th = multiprocessing.Process(target=RunSinlge, args=(strDate, postfix, _lockCSV, args, countryName, fOutConvertName))
@@ -253,26 +267,24 @@ if __name__ == '__main__':
                             raise "Extract process failed"
                     threads = []
 
-                # go to next month  
-                updateDate = MoveToNextWeek(updateDate)
-
             # wait latest threads
             if len(threads) > 0:
-                 for th in threads:
-                     th.join()
-                     if th.exitcode != 0:
-                          raise "Extract process failed"
-        else:
-            raise "Not supported arguments"
+                for th in threads:
+                    th.join()
+                    if th.exitcode != 0:
+                        raise "Extract process failed"
 
-        #print "Write to database"
-        if args.db == "true":
-            StatDatabase.WriteCSVToDatabase(outFilename)
-
-        print "Done country : " + str(countryName)
+            print "Done date : " + str(strDate)
         
-        executeTimeCountry = datetime.datetime.now() - startTime
-        print "ExecuteTime Country (minutes):", round(executeTimeCountry.seconds/60)
+            executeTimeDate = datetime.datetime.now() - startTimeDate
+            print "ExecuteTime Date (minutes):", round(executeTimeDate.seconds/60)
+
+            if args.db == "true":
+                print "Write to database"
+                for countryName in countryNames:
+                    outFilename = "output-" + countryName + ".csv"
+                    if os.path.isfile(outFilename):
+                        StatDatabase.WriteCSVToDatabase(outFilename)
 
 
     executeTime = datetime.datetime.now() - startTime
