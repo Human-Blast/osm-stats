@@ -223,8 +223,7 @@ if __name__ == '__main__':
                 # go to next month
                 updateDate = MoveToNextWeek(updateDate)    
         elif args.inputfile != None:
-            #strDate = OSMDateInfo.GetDateFromFile(args.inputfile)    
-            strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
+            strDate = OSMDateInfo.GetDateFromFile(args.inputfile)    
             RunSinlge(strDate, "", _lockCSV, args, countryName, "")
         elif args.url != None:
             strDate = OSMDateInfo.GetDateFromUrl(args.url)
@@ -233,7 +232,7 @@ if __name__ == '__main__':
             fOutConvertName = historyConvertFiles[countryName]
 
             enableThreading = (countOfWeeks >= 3);
-            threadCount = 8
+            threadCount = 2
             threads = []
 
             for i in range(0, countOfWeeks):

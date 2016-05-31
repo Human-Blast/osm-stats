@@ -63,6 +63,9 @@ def GetStatisticFromFile(filename, highwayTypes):
                 elif row[0] == "severalLangs":
                     res[StatFieldRoadsWithSecondLang].Count = int(row[2])
                     res[StatFieldRoadsWithSecondLang].Length = float(row[3])
+                elif row[0] == "turnRestrict":
+                    res[StatFieldTurnRestrict].Count = int(row[2])
+                    res[StatFieldTurnRestrict].Length = float(row[3])
                 elif row[0] == "highway":
                     highwayVal = row[1]
                     res[highwayVal].Count = int(row[2])
@@ -73,7 +76,7 @@ def GetStatisticFromFile(filename, highwayTypes):
         return res
 
 def GetStatistic(filename, strDate, highwayTypes, postfix):
-    outputfile = "convstat_" + postfix + ".csv"
+    outputfile = "convstat" + postfix + ".csv"
 
     if os.path.isfile(outputfile):
          os.remove(outputfile) 
@@ -85,8 +88,16 @@ def GetStatistic(filename, strDate, highwayTypes, postfix):
     else :
         appName = "./osmconvert64"
 
+
     tagsStats = ""
     tagsVals = ""
+
+
+    for highwayType in highwayTypes:
+        tagsStats += "highway"
+        tagsVals += highwayType
+        tagsStats += ","
+        tagsVals += ","
 
     tagsStats += "oneway,"
     tagsVals += "yes,"
@@ -94,30 +105,18 @@ def GetStatistic(filename, strDate, highwayTypes, postfix):
     tagsStats += "name,"
     tagsVals += "*,"
 
-    tagsStats += "ref,"
-    tagsVals += "*,"
-
-    tagsStats += "turn"
+    tagsStats += "ref"
     tagsVals += "*"
-
-    for highwayType in highwayTypes:
-        tagsStats += ","
-        tagsVals += ","
-
-        tagsStats += "highway"
-        tagsVals += highwayType
-
 
     convertPipe = subprocess.Popen([appName, 
             filename,             
             "--out-statistics",
             "--stat-timestamp=" + strDate,
+            "--max-objects=1400000000",
             "-tagsStats=" + tagsStats,
             "-tagsVals=" + tagsVals,
             "-statfile=" + outputfile
             ], stdout=sys.stdout)
-    retcode = convertPipe.wait()
-
     retcode = convertPipe.wait()
     if retcode != 0:
         raise "Can't extract statistic"

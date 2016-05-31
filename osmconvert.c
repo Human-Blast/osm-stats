@@ -9854,10 +9854,16 @@ static int oo_main() {
 	state_t stateItems[100];
 	int stateItemsCount = 0;
 
+	int64_t prevRelationId = 0;
+	double restrictLen = 0;
+	bool isRestrict = false;
+
 	bool isHasSeveralLangs = false;
 	bool isHighway = false;
 
 	double lenMiles = 0;
+
+
 	int32_t lon, lat;
 	uint32_t hisver;
 	int64_t histime;
@@ -9909,6 +9915,7 @@ static int oo_main() {
 
 		// Custom
 		statItem_t severalLangs;
+		statItem_t turnRestrict;
 		statItem_t statItems[100];
 	} statistics;
 	bool diffcompare;  // the next object shall be compared
@@ -10946,6 +10953,10 @@ static int oo_main() {
 						}
 						else if (prevNodeId != id){
 							posi_set(prevNodeId, prevLon, prevLat);  // store position
+
+							prevNodeId = id;
+							prevLat = lat;
+							prevLon = lon;
 						}
 						
 
@@ -10984,6 +10995,9 @@ static int oo_main() {
 									statistics.severalLangs.len += lenMiles;
 								}
 							}
+
+							// Save length
+							posi_set(id + global_otypeoffset10, (int)(lenMiles * 1000), 0);
 						}
 
 						isHasSeveralLangs = false;
@@ -11076,6 +11090,59 @@ static int oo_main() {
 						}
 					}
 					else if (otype == 2) {  // relation
+
+						if (prevRelationId != id && prevRelationId != 0){
+							if (isRestrict && restrictLen > 0){
+								statistics.turnRestrict.count++;
+								statistics.turnRestrict.len += restrictLen;
+							}
+						}
+						else{
+							prevRelationId = id;
+						}
+
+						isRestrict = false;
+						restrictLen = 0;
+
+						keyp = key; valp = val;
+						while (keyp < keye)  // for all key/val pairs of this object
+						{
+							int idx = 0;
+							char* k = *keyp;
+							char* v = *valp;
+
+							if (strcmp(k, "restriction") == 0)
+							{
+								isRestrict = true;
+							}
+
+							valp++;
+							keyp++;
+						}
+
+
+						if (isRestrict){
+							refidp = refid; reftypep = reftype; refrolep = refrole;
+							while (refidp < refide) {  // for every referenced object
+								int64_t ri = *refidp;
+								int rt = *reftypep;
+								char* role = *refrolep;
+								if (rt == 1 && strcmp(role, "from") == 0)  // way
+								{
+									posi_get(ri + global_otypeoffset10);
+									if (posi_xy != NULL){
+										double l = posi_xy[0];
+										l /= 1000;
+										restrictLen += l;
+									}
+								}
+
+								refidp++;
+								reftypep++;
+								refrolep++;
+							}  // end   for every referenced object
+						}
+
 						statistics.relations++;
 						if (statistics.relation_id_min == 0 ||
 							id<statistics.relation_id_min)
@@ -11087,6 +11154,8 @@ static int oo_main() {
 							statistics.relrefs_oid = id;
 							statistics.relrefs_max = refide - refid;
 						}
+
+
 					}
 
 
@@ -11518,6 +11587,7 @@ static int oo_main() {
 		}
 
 		fprintf(fi, "%s,%s,%"PRIi64", %f \n", "severalLangs", "*", statistics.severalLangs.count, (float)statistics.severalLangs.len);
+		fprintf(fi, "%s,%s,%"PRIi64", %f \n", "turnRestrict", "*", statistics.turnRestrict.count, (float)statistics.turnRestrict.len);
 
 
 		//if (statistics.timestamp_min != 0) {
@@ -12597,9 +12667,7 @@ int main(int argc, char** argv) {
 		}
 
 		if (strzcmp(a, "-tagsStats=") == 0 && a[11] != 0) {
-			// reroute standard output to a file
 			tagsKeyStats = StrSplit(a + 11, ',');
-			//tagsKeyStats = splitSToDifParts(a[3], ',');
 			tagsStatsCount = 0;
 			while (true)
 			{
@@ -12609,9 +12677,7 @@ int main(int argc, char** argv) {
 				}
 				tagsStatsCount++;
 			}
-			char msg[500];
-			sprintf(msg, "tagsStatsCount:%d\n", tagsStatsCount);
-			fprintf(stderr, msg);
+			fprintf(stderr, "tagsStatsCount:%d\n", tagsStatsCount);
 			continue;  // take next parameter
 		}
 		if (strzcmp(a, "-tagsVals=") == 0 && a[10] != 0) {
