@@ -616,9 +616,6 @@ static int64_t global_maxrefs = 100000;
 
 #define pi 3.14159265358979323846
 
-/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
-/*::  Function prototypes                                           :*/
-/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
 double deg2rad(double);
 double rad2deg(double);
 
@@ -636,16 +633,10 @@ double distanceLatLonInMiles(double lat1, double lon1, double lat2, double lon2)
 	return (dist);
 }
 
-/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
-/*::  This function converts decimal degrees to radians             :*/
-/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
 double deg2rad(double deg) {
 	return (deg * pi / 180);
 }
 
-/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
-/*::  This function converts radians to decimal degrees             :*/
-/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
 double rad2deg(double rad) {
 	return (rad * 180 / pi);
 }
@@ -9858,6 +9849,8 @@ static int oo_main() {
 	int64_t id;
 
 	int64_t prevWayId = 0;
+	int64_t prevNodeId = 0;
+	int32_t prevLon = 0, prevLat = 0;
 	state_t stateItems[100];
 	int stateItemsCount = 0;
 
@@ -10946,7 +10939,15 @@ static int oo_main() {
 							statistics.lat_min = statistics.lat_max = lat;
 						}
 
-						posi_set(id, lon, lat);  // store position
+						if (prevNodeId == 0 || prevNodeId == id){
+							prevNodeId = id;
+							prevLat = lat;
+							prevLon = lon;
+						}
+						else if (prevNodeId != id){
+							posi_set(prevNodeId, prevLon, prevLat);  // store position
+						}
+						
 
 						statistics.nodes++;
 						if (statistics.node_id_min == 0 || id < statistics.node_id_min)
