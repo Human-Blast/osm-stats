@@ -243,7 +243,7 @@ if __name__ == '__main__':
             startTimeDate = datetime.datetime.now()
 
             enableThreading = (len(countryNames) >= 3);
-            threadCount = 8
+            threadCount = 20
             threads = []
 
             for countryName in countryNames:
