@@ -20,7 +20,7 @@ import StatDatabase
 #
 
 # Parameters of date region
-updateDate = datetime.date.today();
+updateDate = datetime.date.today()
 countOfWeeks = 1
 
 # boundary of countries in shape format
@@ -30,16 +30,15 @@ highwayTypes = ["motorway", "secondary",
                 "secondary_link", "primary", "primary_link", 
                 "tertiary", "residential", "unclassified",
                 "road", "path", "service",
-                "living_street", "track", "raceway"
-                ]
+                "living_street", "track", "raceway"]
 # End of applications parameters
-
 
 def MoveToNextWeek(sourcedate):
         d = sourcedate - datetime.timedelta(days=7)
         return d
 
 def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
+
     lockCSV.acquire()
     date = datetime.datetime.strptime(strDate, "%Y-%m-%dT%H:%M:%SZ")
     csvDateStr = date.strftime("%d %B %Y")
@@ -50,7 +49,7 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
     res = {}
 
 
-    # first download OSM data 
+    # first download OSM data
     if args.overpass == "true":
         # download by Overpass_API
         print "Start download OSM data 'Overpass_API' "
@@ -175,12 +174,12 @@ if __name__ == '__main__':
         threads = []
 
         for countryName in countryNames:
-            spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
-            
             postfix = str(countryName)
             fOutConvertName = "convert" + str(postfix) + ".pbf"
 
             if args.extractsReady == None:
+                spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
+
                 th = multiprocessing.Process(target=ConvertFile, args=(countryName, args.history, postfix, spatPoly, True))
                 th.start()
                 threads.append(th)
@@ -222,6 +221,7 @@ if __name__ == '__main__':
             RunSinlge(strDate, "", _lockCSV, args, countryName, "")
 
     elif args.history != None:
+
         # Create CSVs
         for countryName in countryNames:
             outFilename = "output-" + countryName + ".csv"
@@ -233,7 +233,7 @@ if __name__ == '__main__':
         for i in range(0, countOfWeeks):
             strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-            # go to next month  
+            # go to next month
             updateDate = MoveToNextWeek(updateDate)
 
             print "=============================="
@@ -242,8 +242,8 @@ if __name__ == '__main__':
 
             startTimeDate = datetime.datetime.now()
 
-            enableThreading = (len(countryNames) >= 3);
-            threadCount = 20
+            enableThreading = (len(countryNames) >= 3)
+            threadCount = 8
             threads = []
 
             for countryName in countryNames:
@@ -260,12 +260,18 @@ if __name__ == '__main__':
                 else:
                     RunSinlge(strDate, "", _lockCSV, args, countryName, fOutConvertName)
 
-                if len(threads) >= threadCount:
+                while len(threads) >= threadCount:
+                    aliveThreads = []
                     for th in threads:
-                        th.join()
+                        th.join(1)
+                        
+                        if th.is_alive():
+                            aliveThreads.append(th)
+                            continue
+
                         if th.exitcode != 0:
                             raise "Extract process failed"
-                    threads = []
+                    threads = aliveThreads
 
             # wait latest threads
             if len(threads) > 0:
@@ -277,7 +283,7 @@ if __name__ == '__main__':
             print "Done date : " + str(strDate)
         
             executeTimeDate = datetime.datetime.now() - startTimeDate
-            print "ExecuteTime Date (minutes):", round(executeTimeDate.seconds/60)
+            print "ExecuteTime Date (minutes):", round(executeTimeDate.seconds / 60)
 
             if args.db == "true":
                 print "Write to database"
@@ -288,6 +294,6 @@ if __name__ == '__main__':
 
 
     executeTime = datetime.datetime.now() - startTime
-    print "ExecuteTime(minutes):", round(executeTime.seconds/60)
+    print "ExecuteTime(minutes):", round(executeTime.seconds / 60)
 
     print "Done success"
