@@ -123,7 +123,11 @@ if __name__ == '__main__':
     parser.add_argument("-dumpCountry")
     parser.add_argument("-db")
     parser.add_argument("-extractsReady")
+    parser.add_argument("-date")
     args = parser.parse_args(sys.argv[1:])
+
+    if args.date != None:
+        updateDate = datetime.datetime.strptime(args.date, "%Y.%m.%d").date()
 
     countryNames = GDALWorker.GetCountryNames(shpBoundFilename)
 
