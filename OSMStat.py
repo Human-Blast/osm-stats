@@ -232,15 +232,17 @@ if __name__ == '__main__':
 
     elif args.history != None:
 
-        # Create CSVs
-        for countryName in countryNames:
-            outFilename = "output-" + countryName + ".csv"
-            outFile = open(outFilename, "w")
-            outFile.write("Date,Country,Name,Count,Length\n")
-            outFile.close()
 
 
         for i in range(0, countOfWeeks):
+            
+            # Create CSVs
+            for countryName in countryNames:
+                outFilename = "output-" + countryName + ".csv"
+                outFile = open(outFilename, "w")
+                outFile.write("Date,Country,Name,Count,Length\n")
+                outFile.close()
+
             strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
 
             # go to next month
