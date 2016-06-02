@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
 
     if args.pushCSV != "" and args.pushCSV != None:
-        StatDatabase.WriteCSVToDatabase(args.pushCSV)
+        StatDatabase.WriteCSVToDatabase([args.pushCSV])
         sys.exit(0)
 
     if args.removeFromDatabase != "" and args.removeFromDatabase != None:
@@ -299,10 +299,13 @@ if __name__ == '__main__':
 
             if args.db == "true":
                 print "Write to database"
+                outFilenames = []
                 for countryName in countryNames:
                     outFilename = "output-" + countryName + ".csv"
                     if os.path.isfile(outFilename):
-                        StatDatabase.WriteCSVToDatabase(outFilename)
+                        outFilenames.append(outFilename)
+                    
+                StatDatabase.WriteCSVToDatabase(outFilenames)
 
 
     executeTime = datetime.datetime.now() - startTime
