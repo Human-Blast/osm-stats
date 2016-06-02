@@ -106,3 +106,63 @@ def WriteCSVToDatabase(filename):
     conn.close()
 
     print "Push complete"
+
+def UpdateWorldStatistic(year):
+    import psycopg2
+
+    print "Start update WORLD statistic"
+
+    conn = psycopg2.connect("postgres://xksrylseratnzb:MLlMNpKQXP-st8vNW3rj0JShmh@ec2-54-235-78-240.compute-1.amazonaws.com:5432/d8hhbphanhc0fd")
+    cur = conn.cursor()    
+
+    # delete previous world data 
+    cur.execute("DELETE from road_stats WHERE country_code=%s", ["world"])
+
+    cur.execute("SELECT \"year\" from road_stats")
+    rows = cur.fetchall()
+    
+    #if any(len(r) > 0 for r in rows) == False:
+    #    return
+
+    minYear = 0
+    maxYear = 0
+
+    if year != None:
+        minYear = int(year)
+        maxYear = int(year)
+    else: 
+        isInit = False
+        for row in rows:
+            year = int(row[0])
+            if isInit == False:
+                minYear = year
+                maxYear = year
+                isInit = True
+                continue
+
+            minYear = min(minYear, year)
+            maxYear = max(maxYear, year)
+
+
+    for year in range(minYear, maxYear + 1):
+        print "Update statistic for year:", year
+        for week in range(0, 55):
+            cur.execute("SELECT \"kind\", \"count\", \"length\" from road_stats WHERE year=%s AND week=%s", [year, week])
+            rows = cur.fetchall()
+            if (len(rows) == 0):
+                continue
+            res = {}
+            for row in rows:
+                kind = row[0]
+                if(res.has_key(kind) == False):
+                    res[kind] = StaticsticRes()
+                stat = res[kind]
+                stat.Count += int(row[1])
+                stat.Length += float(row[2])
+
+            for key,item in res.iteritems():
+                cur.execute("INSERT INTO road_stats (\"country_code\", \"year\", \"week\", \"kind\", \"count\", \"length\") values(%s,%s,%s,%s,%s,%s)", ["world", year, week, key, item.Count, item.Length])
+
+    conn.commit()
+    cur.close()
+    conn.close()

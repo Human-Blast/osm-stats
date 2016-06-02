@@ -35,6 +35,10 @@ python2.7 OSMStat.py -inputfile "planet.osm.bz2"
 
 -db: wirte result to database
 
+-dumpDatabase: dump database to CSV
+
+-world: update statistic for world in database
+
 -overpass: use OverpassAPI to download data  This API allowed get "Historic dumps" of OSM data. More info about  "Overpass_API"
 
 Example:  

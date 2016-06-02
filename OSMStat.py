@@ -124,6 +124,7 @@ if __name__ == '__main__':
     parser.add_argument("-db")
     parser.add_argument("-extractsReady")
     parser.add_argument("-date")
+    parser.add_argument("-world")
     args = parser.parse_args(sys.argv[1:])
 
     if args.date != None:
@@ -138,6 +139,11 @@ if __name__ == '__main__':
     if args.country != "" and args.country != None:
         countryNames = []
         countryNames.append(str(args.country))
+
+    if args.world != None:
+        StatDatabase.UpdateWorldStatistic(args.year)
+        sys.exit(0)
+
 
     if args.pushCSV != "" and args.pushCSV != None:
         StatDatabase.WriteCSVToDatabase(args.pushCSV)
@@ -257,7 +263,7 @@ if __name__ == '__main__':
                 fOutConvertName = historyConvertFiles[countryName]
 
                 if enableThreading:
-                    postfix = str(len(threads) + 1)
+                    postfix = str(countryName)
                     th = multiprocessing.Process(target=RunSinlge, args=(strDate, postfix, _lockCSV, args, countryName, fOutConvertName))
                     th.start()
                     threads.append(th)
