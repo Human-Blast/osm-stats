@@ -83,7 +83,7 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
     
 
     print "Write to CSV..."
-    outFile = open("output-" + countryName + ".csv", "a")
+    outFile = open("output-" + countryName + ".csv", "w")
     countryShortName = GDALWorker.GetShortCountryName(shpBoundFilename, countryName)
     for key, value in res.iteritems():
         outStr = csvDateStr
@@ -237,11 +237,11 @@ if __name__ == '__main__':
         for i in range(0, countOfWeeks):
             
             # Create CSVs
-            for countryName in countryNames:
-                outFilename = "output-" + countryName + ".csv"
-                outFile = open(outFilename, "w")
-                outFile.write("Date,Country,Name,Count,Length\n")
-                outFile.close()
+            #for countryName in countryNames:
+            #    outFilename = "output-" + countryName + ".csv"
+            #    outFile = open(outFilename, "w")
+            #    outFile.write("Date,Country,Name,Count,Length\n")
+            #    outFile.close()
 
             strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
 
