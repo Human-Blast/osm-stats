@@ -292,20 +292,18 @@ if __name__ == '__main__':
                     if th.exitcode != 0:
                         raise "Extract process failed"
 
-            print "Done date : " + str(strDate)
-        
-            executeTimeDate = datetime.datetime.now() - startTimeDate
-            print "ExecuteTime Date (minutes):", round(executeTimeDate.seconds / 60)
-
             if args.db == "true":
                 print "Write to database"
                 outFilenames = []
                 for countryName in countryNames:
                     outFilename = "output-" + countryName + ".csv"
                     if os.path.isfile(outFilename):
-                        outFilenames.append(outFilename)
-                    
+                        outFilenames.append(outFilename)                    
                 StatDatabase.WriteCSVToDatabase(outFilenames)
+
+            print "Done date : " + str(strDate)        
+            executeTimeDate = datetime.datetime.now() - startTimeDate
+            print "ExecuteTime Date (minutes):", round(executeTimeDate.seconds / 60)
 
 
     executeTime = datetime.datetime.now() - startTime

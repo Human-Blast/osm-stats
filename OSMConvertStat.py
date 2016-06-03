@@ -48,6 +48,10 @@ def GetStatisticFromFile(filename, highwayTypes):
         res[StatFieldRoadsWithDesignation] = StaticsticRes()
         res[StatFieldRoadsWithSecondLang] = StaticsticRes()
 
+        if os.path.isfile(filename) == False:
+            print "Warning, statistic missing:" + str(filename)
+            return res
+
         with open(filename, 'rb') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='|')
             for row in reader:
@@ -80,6 +84,7 @@ def GetStatistic(filename, strDate, highwayTypes, postfix):
 
     if os.path.isfile(outputfile):
          os.remove(outputfile) 
+         
 
     # "test.pbf" --out-statistics --stat-timestamp="2016-05-31T23:59:30Z" -tagsStats="highway,highway,oneway" -tagsVals="primary,motorway,yes" -statfile="out.csv"
     appName = ""
