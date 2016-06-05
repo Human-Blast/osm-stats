@@ -103,7 +103,9 @@ def ConvertFile(spatPoly, filename, postfix, usePbf=False):
 
         convertPipe.stdin.close()
         convertPipe.wait()
-
+        if convertPipe.returncode != 0:
+            print "Convertation failed:", convertPipe.returncode, filename
+            raise "Convertation failed"
 
         return outputfile
 
@@ -206,5 +208,8 @@ def ConvertUrl(spatPoly, url, postfix, usePbf=False):
 
         convertPipe.stdin.close()
         convertPipe.wait()
+        if convertPipe.returncode != 0:
+            print "Convertation failed:", convertPipe.returncode, url
+            raise "Convertation failed"
 
         return outputfile
