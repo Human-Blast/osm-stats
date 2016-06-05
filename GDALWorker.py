@@ -175,6 +175,7 @@ def GetCountryNames(shpBoundFilename):
         # get the input geometry
         geom = feature.GetGeometryRef()
         name = feature.GetField("NAME")
-        countryNames.append(name)
+        if name not in countryNames:
+            countryNames.append(name)
 
     return countryNames

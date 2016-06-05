@@ -83,7 +83,7 @@ def RunSinlge(strDate, postfix, lockCSV, args, countryName, historyfilename):
     
 
     print "Write to CSV..."
-    outFile = open("output-" + countryName + ".csv", "w")
+    outFile = open("output-" + countryName + ".csv", "a")
     countryShortName = GDALWorker.GetShortCountryName(shpBoundFilename, countryName)
     for key, value in res.iteritems():
         outStr = csvDateStr
@@ -143,7 +143,6 @@ if __name__ == '__main__':
     if args.world != None:
         StatDatabase.UpdateWorldStatistic(args.year)
         sys.exit(0)
-
 
     if args.pushCSV != "" and args.pushCSV != None:
         StatDatabase.WriteCSVToDatabase([args.pushCSV])
@@ -232,16 +231,14 @@ if __name__ == '__main__':
 
     elif args.history != None:
 
-
-
         for i in range(0, countOfWeeks):
             
             # Create CSVs
-            #for countryName in countryNames:
-            #    outFilename = "output-" + countryName + ".csv"
-            #    outFile = open(outFilename, "w")
-            #    outFile.write("Date,Country,Name,Count,Length\n")
-            #    outFile.close()
+            for countryName in countryNames:
+                outFilename = "output-" + countryName + ".csv"
+                outFile = open(outFilename, "w")
+                outFile.write("Date,Country,Name,Count,Length\n")
+                outFile.close()
 
             strDate = updateDate.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -255,7 +252,7 @@ if __name__ == '__main__':
             startTimeDate = datetime.datetime.now()
 
             enableThreading = (len(countryNames) >= 3)
-            threadCount = 5
+            threadCount = 7
             threads = []
 
             for countryName in countryNames:

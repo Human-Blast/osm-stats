@@ -11582,8 +11582,6 @@ static int oo_main() {
 			float flen = (float)len;
 			char* nn = tagsKeyStats[idx];
 			fprintf(fi, "%s,%s,%"PRIi64", %f \n", tagsKeyStats[idx], tagsValStats[idx], statistics.statItems[idx].count, flen);
-
-			fprintf(stderr, "%s,%s,%"PRIi64", %f \n", tagsKeyStats[idx], tagsValStats[idx], statistics.statItems[idx].count, flen);
 		}
 
 		fprintf(fi, "%s,%s,%"PRIi64", %f \n", "severalLangs", "*", statistics.severalLangs.count, (float)statistics.severalLangs.len);
