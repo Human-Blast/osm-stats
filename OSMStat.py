@@ -123,6 +123,7 @@ if __name__ == '__main__':
     parser.add_argument("-dumpCountry")
     parser.add_argument("-db")
     parser.add_argument("-extractsReady")
+    parser.add_argument("-extractsOnly")
     parser.add_argument("-date")
     parser.add_argument("-world")
     args = parser.parse_args(sys.argv[1:])
@@ -179,7 +180,7 @@ if __name__ == '__main__':
     # Extract data for countries
     historyConvertFiles = {}
     if args.history != None and args.history != "":
-        threadCount = 8
+        threadCount = 5
         threads = []
 
         for countryName in countryNames:
@@ -201,6 +202,11 @@ if __name__ == '__main__':
                     threads = []
 
             historyConvertFiles[countryName] = fOutConvertName
+
+        if args.extractsOnly != None:
+            print "Extract complete"
+            sys.exit(0)
+
 
         # wait latest threads
         if len(threads) > 0:
@@ -295,7 +301,8 @@ if __name__ == '__main__':
                 for countryName in countryNames:
                     outFilename = "output-" + countryName + ".csv"
                     if os.path.isfile(outFilename):
-                        outFilenames.append(outFilename)                    
+                        outFilenames.append(outFilename)     
+                                       
                 StatDatabase.WriteCSVToDatabase(outFilenames)
 
             print "Done date : " + str(strDate)        
