@@ -27,6 +27,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Dump.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="OSMConvertStat.py" />
     <Compile Include="StatDatabase.py">
       <SubType>Code</SubType>
