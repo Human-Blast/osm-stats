@@ -74,30 +74,20 @@ def DumptToCSV():
     cur.close()
     conn.close()
 
-
 def WriteCSVToDatabase(filenames):
     import psycopg2
     conn = psycopg2.connect("postgres://xksrylseratnzb:MLlMNpKQXP-st8vNW3rj0JShmh@ec2-54-235-78-240.compute-1.amazonaws.com:5432/d8hhbphanhc0fd")
     cur = conn.cursor()    
     
-    cur.execute("SELECT \"country_code\", \"year\", \"week\", \"kind\", \"count\", \"length\" from road_stats")
-    rows = cur.fetchall()
-
     for filename in filenames:
         # Get statistic from CSV
         statCSV = GetStatisticFromFile(filename)
-        statKeysCSV = {}
-        for item in statCSV:
-            key = str(item.Country) + str(item.Year) + str(item.Week) + str(item.Kind)
-            statKeysCSV[key] = True
 
         print "Start push CSV to database : ", filename
 
-        for row in rows:
-            keyRow = str(row[0]) + str(row[1]) + str(row[2]) + str(row[3])
-            if statKeysCSV.has_key(keyRow):
-                # Delete previous record
-                cur.execute("DELETE from road_stats WHERE country_code=%s AND year=%s AND week=%s AND kind=%s", [row[0], row[1], row[2], row[3]])
+        for item in statCSV:
+             # Delete previous record
+             cur.execute("DELETE from road_stats WHERE country_code=%s AND year=%s AND week=%s AND kind=%s", [item.Country, item.Year, item.Week, item.Kind])                    
 
         # Pull new values
         for item in statCSV:
