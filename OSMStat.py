@@ -186,7 +186,7 @@ if __name__ == '__main__':
     # Extract data for countries
     historyConvertFiles = {}
     if args.history != None and args.history != "":
-        threadCount = 5
+        threadCount = 6
         threads = []
 
         for countryName in countryNames:

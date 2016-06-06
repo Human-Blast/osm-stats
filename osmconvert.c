@@ -466,7 +466,7 @@ static int loglevel = 0;  // logging to stderr;
 #define DPM(f,p,m) { byte* pp; int i,mm; static int msgn= 3; \
   if(--msgn>=0) { fprintf(stderr,"Debug memory: " #f); \
   pp= (byte*)(p); mm= (m); if(pp==NULL) fprintf(stderr,"\n  (null)"); \
-							    else for(i= 0; i<mm; i++) { \
+																															    else for(i= 0; i<mm; i++) { \
   if((i%16)==0) fprintf(stderr,"\n "); \
   fprintf(stderr," %02x",*pp++); } \
   fprintf(stderr,"\n"); } }
@@ -2212,7 +2212,7 @@ static void border_querybox(int32_t* x1p, int32_t* y1p,
 	x2 = border__bx2; y2 = border__by2;
 	// round coordinates a bit
 #define D(x) { if(x%1000==1) { if(x>0) x--; else x++; } \
-				    else if((x)%1000==999) { if((x)>0) x++; else x--; } }
+						    else if((x)%1000==999) { if((x)>0) x++; else x--; } }
 	D(x1) D(y1) D(x2) D(y2)
 #undef D
 		*x1p = x1; *y1p = y1; *x2p = x2; *y2p = y2;
@@ -2775,7 +2775,7 @@ static inline void write_xmlstr(const char* s) {
         write_error|= \
           write(write__fd,write__buf,write__bufp-write__buf)<0; \
       write__bufp= write__buf; \
-				      } \
+						      } \
     *write__bufp++= (char)(c); }
 
 	for (;;) {
@@ -2867,7 +2867,7 @@ static inline void write_xmlmnstr(const char* s) {
         write_error|= \
           write(write__fd,write__buf,write__bufp-write__buf)<0; \
       write__bufp= write__buf; \
-				      } \
+						      } \
     *write__bufp++= (char)(c); }
 #define D(i) ((byte)(s[i]))
 #define DD ((byte)c)
@@ -5904,7 +5904,7 @@ static inline void pw_way(int64_t id,
 			if (hisuid == 0) hisuser = "";
 			stid = pstw_store(hisuser);
 			pw__obj_add_uint32(stid);
-			
+
 			pw__obj_add_id(0x30);  // V 6 'hisvis'
 			if (hisvis < 0) {
 				hisvis = 1;
@@ -9886,7 +9886,9 @@ static int oo_main() {
 
 	bool isHasSeveralLangs = false;
 	bool isDeletedWay = false;
+	int64_t objectDeleteDate = 0;
 	int64_t objectCreateDate = 0;
+	int64_t objectModifiedDate = 0;
 
 	double lenMiles = 0;
 
@@ -11043,48 +11045,49 @@ static int oo_main() {
 
 							if (isDeletedWay && stateItemsCount > 0)
 							{
-								if (lenMiles != 0){
-									statistics.deletedObjects.count++;
-									statistics.deletedObjects.len += lenMiles;
-								}
-							}
-							else
-							{								
-								if (stateItemsCount > 0)
+								if (lenMiles != 0)
 								{
 									if (global_stat_timestamp_start != 0)
 									{
-										if (objectCreateDate != 0)
+										if (objectDeleteDate >= global_stat_timestamp_start && objectDeleteDate <= global_stat_timestamp)
 										{
-											if (objectCreateDate >= global_stat_timestamp_start && objectCreateDate <= global_stat_timestamp)
-											{
-												// new object
-												statistics.newObjects.count++;
-												statistics.newObjects.len += lenMiles;
-											}
-											else
-											{
-												// modified object
-												statistics.modifiedObjects.count++;
-												statistics.modifiedObjects.len += lenMiles;
-											}
+											statistics.deletedObjects.count++;
+											statistics.deletedObjects.len += lenMiles;
 										}
 									}
-
-
-									int iState = 0;
-									for (iState = 0; iState < stateItemsCount; iState++)
+								}
+							}
+							else if (stateItemsCount > 0)
+							{
+								if (global_stat_timestamp_start != 0)
+								{
+									if (objectCreateDate >= global_stat_timestamp_start && objectCreateDate <= global_stat_timestamp)
 									{
-										int index = stateItems[iState].index;
-										statistics.statItems[index].count++;
-										statistics.statItems[index].len += stateItems[iState].len;
+										// new object
+										statistics.newObjects.count++;
+										statistics.newObjects.len += lenMiles;
 									}
+									else if (objectModifiedDate >= global_stat_timestamp_start && objectModifiedDate <= global_stat_timestamp)
+									{
+										// modified object
+										statistics.modifiedObjects.count++;
+										statistics.modifiedObjects.len += lenMiles;
+									}
+								}
 
 
-									if (isHasSeveralLangs){
-										statistics.severalLangs.count++;
-										statistics.severalLangs.len += lenMiles;
-									}
+								int iState = 0;
+								for (iState = 0; iState < stateItemsCount; iState++)
+								{
+									int index = stateItems[iState].index;
+									statistics.statItems[index].count++;
+									statistics.statItems[index].len += stateItems[iState].len;
+								}
+
+
+								if (isHasSeveralLangs){
+									statistics.severalLangs.count++;
+									statistics.severalLangs.len += lenMiles;
 								}
 							}
 
@@ -11093,7 +11096,9 @@ static int oo_main() {
 
 							// Reset parameters
 							isDeletedWay = false;
+							objectDeleteDate = 0;
 							objectCreateDate = 0;
+							objectModifiedDate = 0;
 							lenMiles = 0;
 						}
 
@@ -11102,6 +11107,7 @@ static int oo_main() {
 						if (hisvis == 0){
 							// object deleted
 							isDeletedWay = true;
+							objectDeleteDate = histime;
 							continue;
 						}
 
@@ -11110,6 +11116,7 @@ static int oo_main() {
 							{
 								objectCreateDate = histime;
 							}
+							objectModifiedDate = histime;
 						}
 
 						isDeletedWay = false;
@@ -12256,7 +12263,7 @@ static bool assistant(int* argcp, char*** argvp) {
 		DD(talk_section)
 			for (;;) {
 #define D(s) DI(s) \
-				        while(strchr(s,',')!=NULL) *strchr(s,',')= '.'; \
+						        while(strchr(s,',')!=NULL) *strchr(s,',')= '.'; \
         if(s[0]==0 || s[strspn(s,"0123456789.-")]!=0) { \
           DD(talk_cannot_understand) continue; }
 				DD(talk_coordinates)
