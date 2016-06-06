@@ -113,7 +113,10 @@ def UpdateWorldStatistic(year):
     cur = conn.cursor()    
 
     # delete previous world data 
-    cur.execute("DELETE from road_stats WHERE country_code=%s", ["world"])
+    if year != None and year != "":
+        cur.execute("DELETE from road_stats WHERE country_code=%s AND year=%s", ["world", str(year)])
+    else:
+        cur.execute("DELETE from road_stats WHERE country_code=%s", ["world"])
 
     cur.execute("SELECT \"year\" from road_stats")
     rows = cur.fetchall()
