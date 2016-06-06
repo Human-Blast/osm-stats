@@ -25,23 +25,6 @@ from osgeo import osr
 #for i in range(0, countDriver):
 #    print ogr.GetDriver(i).GetName()
 
-#
-# Description of statistic fields
-#
-StatFieldOneWay = "one_way"
-# Turn Restrictions
-StatFieldTurnRestrict = "turn_restrict"
-# Roads with Names (i.e. Elm Street)
-StatFieldRoadsWithNames = "roads_with_names"
-# Roads with Designation (vs name - i.e. Interstate I-70, State Road 324, etc.)
-StatFieldRoadsWithDesignation = "roads_with_designation"
-# Roads with Different/Secondry Languages other than local language let's look for these secondary languages initially: English Spanish French Mandarin Portuguese
-StatFieldRoadsWithSecondLang = "roads_with_second_lang"
-
-class StaticsticRes:
-    Length = 0
-    Count = 0
-
 
 # example GDAL error handler function
 def gdal_error_handler(err_class, err_num, err_msg):
@@ -101,7 +84,7 @@ def CreatePolyFile(shpBoundFilename, countryName):
         name = feature.GetField("NAME")
         if name.lower() == countryName.lower():
             shortName = feature.GetField("ISO2")
-            outfilename = "spat.poly"
+            outfilename = "spat-" + shortName + ".poly"
             with open(outfilename, "w") as fp:
                 fp.write(str(shortName) + "\n")
 

@@ -21,6 +21,11 @@ StatFieldRoadsWithDesignation = "roads_with_designation"
 # Roads with Different/Secondry Languages other than local language let's look for these secondary languages initially: English Spanish French Mandarin Portuguese
 StatFieldRoadsWithSecondLang = "roads_with_second_lang"
 
+StatFieldNewObjects = "new_objects"
+StatFieldModifiedObjects = "modified_objects"
+StatFieldDeletedObjects = "deleted_objects"
+
+
 class StaticsticRes:
     Length = 0
     Count = 0
@@ -47,6 +52,9 @@ def GetStatisticFromFile(filename, highwayTypes):
         res[StatFieldRoadsWithNames] = StaticsticRes()
         res[StatFieldRoadsWithDesignation] = StaticsticRes()
         res[StatFieldRoadsWithSecondLang] = StaticsticRes()
+        res[StatFieldNewObjects] = StaticsticRes()
+        res[StatFieldModifiedObjects] = StaticsticRes()
+        res[StatFieldDeletedObjects] = StaticsticRes()
 
         if os.path.isfile(filename) == False:
             print "Warning, statistic missing:" + str(filename)
@@ -64,6 +72,15 @@ def GetStatisticFromFile(filename, highwayTypes):
                 elif row[0] == "ref":
                     res[StatFieldRoadsWithDesignation].Count = int(row[2])
                     res[StatFieldRoadsWithDesignation].Length = float(row[3])
+                elif row[0] == "newObjects":
+                    res[StatFieldNewObjects].Count = int(row[2])
+                    res[StatFieldNewObjects].Length = float(row[3])
+                elif row[0] == "modifiedObjects":
+                    res[StatFieldModifiedObjects].Count = int(row[2])
+                    res[StatFieldModifiedObjects].Length = float(row[3])
+                elif row[0] == "deletedObjects":
+                    res[StatFieldDeletedObjects].Count = int(row[2])
+                    res[StatFieldDeletedObjects].Length = float(row[3])
                 elif row[0] == "severalLangs":
                     res[StatFieldRoadsWithSecondLang].Count = int(row[2])
                     res[StatFieldRoadsWithSecondLang].Length = float(row[3])
@@ -74,6 +91,7 @@ def GetStatisticFromFile(filename, highwayTypes):
                     highwayVal = row[1]
                     res[highwayVal].Count = int(row[2])
                     res[highwayVal].Length = float(row[3])
+                
 
 
 
@@ -113,10 +131,15 @@ def GetStatistic(filename, strDate, highwayTypes, postfix):
     tagsStats += "ref"
     tagsVals += "*"
 
+    sourcedate = datetime.datetime.strptime(strDate, "%Y-%m-%dT%H:%M:%SZ")
+    startDate = sourcedate - datetime.timedelta(days=7)
+    startDateStr = startDate.strftime("%Y-%m-%dT%H:%M:%SZ")
+
     convertPipe = subprocess.Popen([appName, 
             filename,             
             "--out-statistics",
             "--stat-timestamp=" + strDate,
+            "--stat-timestamp-start=" + startDateStr,
             "--max-objects=1400000000",
             "-tagsStats=" + tagsStats,
             "-tagsVals=" + tagsVals,

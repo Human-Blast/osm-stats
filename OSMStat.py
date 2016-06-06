@@ -150,12 +150,18 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if args.removeFromDatabase != "" and args.removeFromDatabase != None:
-        if args.country == "" or args.country == None:
-            raise "Country name not set"
-        countryShortName = GDALWorker.GetShortCountryName(shpBoundFilename, args.country)
-        print "Start remove country : " + countryShortName
-        StatDatabase.RemoveFromDatabase(countryShortName, args.year)
-        sys.exit(0)
+        if args.country != "" and args.country != None:
+            countryShortName = GDALWorker.GetShortCountryName(shpBoundFilename, args.country)
+            print "Start remove country : " + countryShortName
+            StatDatabase.RemoveFromDatabase(countryShortName, args.year)
+            sys.exit(0)
+        elif args.year != "" and args.year != None:
+            StatDatabase.RemoveFromDatabase("", args.year)
+            sys.exit(0)
+        else:
+            print "Wrong arguments to remove from database"
+            sys.exit(-1)
+
 
     if args.dumpDatabase != "" and args.dumpDatabase != None:
         StatDatabase.DumptToCSV()
