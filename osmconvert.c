@@ -466,7 +466,7 @@ static int loglevel = 0;  // logging to stderr;
 #define DPM(f,p,m) { byte* pp; int i,mm; static int msgn= 3; \
   if(--msgn>=0) { fprintf(stderr,"Debug memory: " #f); \
   pp= (byte*)(p); mm= (m); if(pp==NULL) fprintf(stderr,"\n  (null)"); \
-			    else for(i= 0; i<mm; i++) { \
+							    else for(i= 0; i<mm; i++) { \
   if((i%16)==0) fprintf(stderr,"\n "); \
   fprintf(stderr," %02x",*pp++); } \
   fprintf(stderr,"\n"); } }
@@ -535,6 +535,7 @@ static bool global_emulateosmium = false;
 static int64_t global_timestamp = 0;
 
 static int64_t global_stat_timestamp = 0;
+static int64_t global_stat_timestamp_start = 0;
 static char** tagsKeyStats = NULL;
 static char** tagsValStats = NULL;
 static int tagsStatsCount = 0;
@@ -2211,7 +2212,7 @@ static void border_querybox(int32_t* x1p, int32_t* y1p,
 	x2 = border__bx2; y2 = border__by2;
 	// round coordinates a bit
 #define D(x) { if(x%1000==1) { if(x>0) x--; else x++; } \
-			    else if((x)%1000==999) { if((x)>0) x++; else x--; } }
+				    else if((x)%1000==999) { if((x)>0) x++; else x--; } }
 	D(x1) D(y1) D(x2) D(y2)
 #undef D
 		*x1p = x1; *y1p = y1; *x2p = x2; *y2p = y2;
@@ -2774,7 +2775,7 @@ static inline void write_xmlstr(const char* s) {
         write_error|= \
           write(write__fd,write__buf,write__bufp-write__buf)<0; \
       write__bufp= write__buf; \
-			      } \
+				      } \
     *write__bufp++= (char)(c); }
 
 	for (;;) {
@@ -2866,7 +2867,7 @@ static inline void write_xmlmnstr(const char* s) {
         write_error|= \
           write(write__fd,write__buf,write__bufp-write__buf)<0; \
       write__bufp= write__buf; \
-			      } \
+				      } \
     *write__bufp++= (char)(c); }
 #define D(i) ((byte)(s[i]))
 #define DD ((byte)c)
@@ -4014,6 +4015,9 @@ static int pb_input(bool reset) {
 									case 0x30:  // V 6, visible
 										bp++;
 										pb_hisvis = pbf_uint32(&bp);
+										if (pb_hisvis == 0){
+											pb_hisvis = 0;
+										}
 										break;
 									default:
 										WARNv("way author element type unknown: "
@@ -5625,6 +5629,8 @@ static void pw__data(int otype) {
 						pw__obj_limit(8 Megabytes);
 						pw__dn_hisuser = pw__obj_open("\x2a");  // S 5 'his.user'
 						pw__obj_limit(6 Megabytes);
+						//pw__dn_hisvis = pw__obj_open("\x32");  // S 6 'his.visible'
+						//pw__obj_limit(6 Megabytes);
 					}  // author information  is to be written
 					pw__obj_limit_parent(pw__dn_his);
 				}  // version number is to be written
@@ -5634,6 +5640,7 @@ static void pw__data(int otype) {
 				pw__obj_limit(30 Megabytes);
 				pw__dn_keysvals = pw__obj_open("\x52");  // S 10 'tags'
 				pw__obj_limit(40 Megabytes);
+				//pw__obj_limit(34 Megabytes);// 6 Mb for 'his.visible'
 				// reset variables for delta coding
 				pw__dc_id = 0;
 				pw__dc_lat = pw__dc_lon = 0;
@@ -5787,7 +5794,7 @@ static inline void pw_flush() {
 
 static inline void pw_node(int64_t id,
 	int32_t hisver, int64_t histime, int64_t hiscset,
-	uint32_t hisuid, const char* hisuser, int32_t lon, int32_t lat) {
+	uint32_t hisuid, const char* hisuser, int32_t lon, int32_t lat, int32_t hisvis) {
 	// start writing a PBF dense node dataset;
 	// id: id of this object;
 	// hisver: version; 0: no author information is to be written
@@ -5821,6 +5828,9 @@ static inline void pw_node(int64_t id,
 			stid = pstw_store(hisuser);
 			pw__obj_add_sint32(stid - pw__dc_hisuser);
 			pw__dc_hisuser = stid;
+			/*pw__objp = pw__dn_hisvis;
+			pw__obj_add_uint32(hisvis);*/
+
 		}  // author information  is to be written
 	}  // version number is to be written
 	pw__objp = pw__dn_lat; pw__obj_add_sint64(lat - pw__dc_lat);
@@ -5853,7 +5863,7 @@ static pw__obj_t* pw__wayrel_keys = NULL, *pw__wayrel_vals = NULL,
 
 static inline void pw_way(int64_t id,
 	int32_t hisver, int64_t histime, int64_t hiscset,
-	uint32_t hisuid, const char* hisuser) {
+	uint32_t hisuid, const char* hisuser, int32_t hisvis) {
 	// start writing a PBF way dataset;
 	// id: id of this object;
 	// hisver: version; 0: no author information is to be written;
@@ -5894,6 +5904,12 @@ static inline void pw_way(int64_t id,
 			if (hisuid == 0) hisuser = "";
 			stid = pstw_store(hisuser);
 			pw__obj_add_uint32(stid);
+			
+			pw__obj_add_id(0x30);  // V 6 'hisvis'
+			if (hisvis < 0) {
+				hisvis = 1;
+			}
+			pw__obj_add_uint32(hisvis);
 		}  // author information  is to be written
 	}  // version number is to be written
 	pw__dc_noderef = 0;
@@ -7960,8 +7976,14 @@ static inline void wo_reset() {
 }  // end   wo_reset()
 
 static inline void wo_node(int64_t id,
-	int32_t hisver, int64_t histime, int64_t hiscset,
-	uint32_t hisuid, const char* hisuser, int32_t lon, int32_t lat) {
+	int32_t hisver,
+	int64_t histime,
+	int64_t hiscset,
+	uint32_t hisuid,
+	const char* hisuser,
+	int32_t lon,
+	int32_t lat,
+	int32_t hisvis) {
 	// write osm node body;
 	// id: id of this object;
 	// hisver: version; 0: no author information is to be written
@@ -7983,7 +8005,7 @@ static inline void wo_node(int64_t id,
 		return;
 	}  // end   o5m
 	if (wo__format < 0) {  // PBF
-		pw_node(id, hisver, histime, hiscset, hisuid, hisuser, lon, lat);
+		pw_node(id, hisver, histime, hiscset, hisuid, hisuser, lon, lat, hisvis);
 		return;
 	}
 	if (wo__format == 21) {  // csv
@@ -8074,9 +8096,11 @@ static inline void wo_node_close() {
 		csv_write();
 }  // end   wo_node_close()
 
-static inline void wo_way(int64_t id,
+static inline void wo_way(
+	int64_t id,
 	int32_t hisver, int64_t histime, int64_t hiscset,
-	uint32_t hisuid, const char* hisuser) {
+	uint32_t hisuid, const char* hisuser,
+	int32_t hisvis) {
 	// write osm way body;
 	// id: id of this object;
 	// hisver: version; 0: no author information is to be written
@@ -8095,7 +8119,7 @@ static inline void wo_way(int64_t id,
 		return;
 	}  // end   o5m
 	if (wo__format < 0) {  // PBF
-		pw_way(id, hisver, histime, hiscset, hisuid, hisuser);
+		pw_way(id, hisver, histime, hiscset, hisuid, hisuser, hisvis);
 		return;
 	}
 	if (wo__format == 21) {  // csv
@@ -9847,6 +9871,8 @@ static int oo_main() {
 	int otype;  // type of currently processed object;
 	// 0: node; 1: way; 2: relation;
 	int64_t id;
+	int64_t prevId = 0;
+	bool isPrevIdIsInside = false;
 
 	int64_t prevWayId = 0;
 	int64_t prevNodeId = 0;
@@ -9859,6 +9885,8 @@ static int oo_main() {
 	bool isRestrict = false;
 
 	bool isHasSeveralLangs = false;
+	bool isDeletedWay = false;
+	int64_t objectCreateDate = 0;
 	bool isHighway = false;
 
 	double lenMiles = 0;
@@ -9869,6 +9897,7 @@ static int oo_main() {
 	int64_t histime;
 	int64_t hiscset;
 	uint32_t hisuid;
+	int32_t hisvis;
 	char* hisuser;
 	int64_t* refid;  // ids of referenced object
 	int64_t* refidee;  // end address of array
@@ -9914,6 +9943,9 @@ static int oo_main() {
 		int64_t relrefs_oid;
 
 		// Custom
+		statItem_t newObjects;
+		statItem_t modifiedObjects;
+		statItem_t deletedObjects;
 		statItem_t severalLangs;
 		statItem_t turnRestrict;
 		statItem_t statItems[100];
@@ -10314,6 +10346,7 @@ static int oo_main() {
 		if (!diffcompare) {  // regularly read the object
 			hisver = 0;
 			histime = 0;
+			hisvis = -1;
 			hiscset = 0;
 			hisuid = 0;
 			hisuser = "";
@@ -10344,7 +10377,29 @@ static int oo_main() {
 					hisuser = pb_hisuser;
 				}
 			}  // end   author information available
-			oo__ifp->deleteobject = pb_hisvis == 0 ? 1 : 0;
+
+			if (id == 331690564){
+				id = id;
+			}
+
+			if (pb_hisvis != 0 && pb_hisvis != 1)
+			{
+				hisvis = 1;
+			}
+			else
+			{
+				hisvis = pb_hisvis;
+			}
+
+			if (otype == 1) {
+				// keep deleted ways for statistic
+				oo__ifp->deleteobject = 0;
+			}
+			else{
+				oo__ifp->deleteobject = pb_hisvis == 0 ? 1 : 0;
+			}
+
+
 			// read noderefs (for ways only)
 			if (otype == 1)  // way
 				refide = refid + pb_noderef(refid, global_maxrefs);
@@ -10940,6 +10995,11 @@ static int oo_main() {
 					}
 
 					if (otype == 0) {  // node
+						if (hisvis == 0){
+							// object deleted
+							continue;
+						}
+
 						if (statistics.nodes == 0) {  // this is the first node
 							posi_ini();
 							statistics.lon_min = statistics.lon_max = lon;
@@ -10958,48 +11018,97 @@ static int oo_main() {
 							prevLat = lat;
 							prevLon = lon;
 						}
-						
 
-						statistics.nodes++;
+
+						/*statistics.nodes++;
 						if (statistics.node_id_min == 0 || id < statistics.node_id_min)
-							statistics.node_id_min = id;
+						statistics.node_id_min = id;
 						if (statistics.node_id_max == 0 || id > statistics.node_id_max)
-							statistics.node_id_max = id;
+						statistics.node_id_max = id;
 						if (lon < statistics.lon_min)
-							statistics.lon_min = lon;
+						statistics.lon_min = lon;
 						if (lon > statistics.lon_max)
-							statistics.lon_max = lon;
+						statistics.lon_max = lon;
 						if (lat < statistics.lat_min)
-							statistics.lat_min = lat;
+						statistics.lat_min = lat;
 						if (lat > statistics.lat_max)
-							statistics.lat_max = lat;
+						statistics.lat_max = lat;*/
 					}
 					else if (otype == 1) {  // way
 
 						if (prevWayId != id)
 						{
-							int iState = 0;
+							//
 							// Dump statistic for way
+							//
 
-							if (isHighway){
-								for (iState = 0; iState < stateItemsCount; iState++)
+							if (isDeletedWay)
+							{
+								statistics.deletedObjects.count++;
+								statistics.deletedObjects.len += lenMiles;
+							}
+							else
+							{								
+								if (isHighway)
 								{
-									int index = stateItems[iState].index;
-									statistics.statItems[index].count ++;
-									statistics.statItems[index].len += stateItems[iState].len;
-								}
+									if (global_stat_timestamp_start != 0)
+									{
+										if (objectCreateDate != 0)
+										{
+											if (objectCreateDate >= global_stat_timestamp_start && objectCreateDate <= global_stat_timestamp)
+											{
+												// new object
+												statistics.newObjects.count++;
+												statistics.newObjects.len += lenMiles;
+											}
+											else
+											{
+												// modified object
+												statistics.modifiedObjects.count++;
+												statistics.modifiedObjects.len += lenMiles;
+											}
+										}
+									}
 
 
-								if (isHasSeveralLangs){
-									statistics.severalLangs.count++;
-									statistics.severalLangs.len += lenMiles;
+									int iState = 0;
+									for (iState = 0; iState < stateItemsCount; iState++)
+									{
+										int index = stateItems[iState].index;
+										statistics.statItems[index].count++;
+										statistics.statItems[index].len += stateItems[iState].len;
+									}
+
+
+									if (isHasSeveralLangs){
+										statistics.severalLangs.count++;
+										statistics.severalLangs.len += lenMiles;
+									}
 								}
 							}
 
+							isDeletedWay = false;
+							objectCreateDate = 0;
 							// Save length
 							posi_set(id + global_otypeoffset10, (int)(lenMiles * 1000), 0);
 						}
 
+						prevWayId = id;
+
+						if (hisvis == 0){
+							// object deleted
+							isDeletedWay = true;
+							continue;
+						}
+
+						if (histime != 0){
+							if (objectCreateDate == 0)
+							{
+								objectCreateDate = histime;
+							}
+						}
+
+						isDeletedWay = false;
 						isHasSeveralLangs = false;
 						isHighway = false;
 
@@ -11008,8 +11117,8 @@ static int oo_main() {
 						bool isPrevSet = false;
 						lenMiles = 0;
 
+						// Calculate length
 						refidp = refid;
-
 						while (refidp < refide) {  // for every referenced node
 							// x,y: geocoordinates in 10^-7 degrees;
 							posi_get(*refidp);
@@ -11056,10 +11165,10 @@ static int oo_main() {
 										stateItems[stateItemsCount].len = lenMiles;
 										stateItems[stateItemsCount].index = idx;
 										stateItemsCount++;
-									}									
+									}
 								}
 							}
-							
+
 							if (strcmp(k, "highway") == 0)
 							{
 								isHighway = true;
@@ -11077,7 +11186,6 @@ static int oo_main() {
 						isHasSeveralLangs = (langCount >= 2);
 						//lenMiles
 
-						prevWayId = id;
 
 						statistics.ways++;
 						if (statistics.way_id_min == 0 || id < statistics.way_id_min)
@@ -11090,6 +11198,10 @@ static int oo_main() {
 						}
 					}
 					else if (otype == 2) {  // relation
+						if (hisvis == 0){
+							// object deleted
+							continue;
+						}
 
 						if (prevRelationId != id && prevRelationId != 0){
 							if (isRestrict && restrictLen > 0){
@@ -11206,7 +11318,7 @@ static int oo_main() {
 						}
 						if (!global_dropnodes) {  // not to drop
 							wo_node(id,
-								hisver, histime, hiscset, hisuid, hisuser, lon, lat);
+								hisver, histime, hiscset, hisuid, hisuser, lon, lat, hisvis);
 							keyp = key; valp = val;
 							while (keyp < keye)  // for all key/val pairs of this object
 								wo_node_keyval(*keyp++, *valp++);
@@ -11233,6 +11345,13 @@ static int oo_main() {
 							}
 							refidp++;
 						}  // end   for every referenced node
+						if (hisvis == 0){
+							if (prevId == id){
+								inside = isPrevIdIsInside;
+							}
+						}
+						prevId = id;
+						isPrevIdIsInside = inside;
 					}  // end   borders are to be applied
 					if (inside) {  // no borders OR at least one node inside
 						if (hashactive)
@@ -11339,7 +11458,7 @@ static int oo_main() {
 										else
 											id_new = id + global_otypeoffset10;
 										wo_node(id_new,
-											hisver, histime, hiscset, hisuid, hisuser, lon, lat);
+											hisver, histime, hiscset, hisuid, hisuser, lon, lat, hisvis);
 										if (global_add)
 											wo_addbboxtags(true, x_min, y_min, x_max, y_max);
 										keyp = key; valp = val;
@@ -11349,7 +11468,7 @@ static int oo_main() {
 									}  // there is at least one coordinate available
 								}  // convert all objects to nodes
 								else {  // objects are not to be converted to nodes
-									wo_way(id, hisver, histime, hiscset, hisuid, hisuser);
+									wo_way(id, hisver, histime, hiscset, hisuid, hisuser, hisvis);
 									refidp = refid;
 									while (refidp < refide) {  // for every referenced node
 										if (!global_dropbrokenrefs || hash_geti(0, *refidp))
@@ -11366,7 +11485,7 @@ static int oo_main() {
 								}  // objects are not to be converted to nodes
 							}  // coordinates of ways shall be calculated
 							else  {  // coordinates of ways need not to be calculated
-								wo_way(id, hisver, histime, hiscset, hisuid, hisuser);
+								wo_way(id, hisver, histime, hiscset, hisuid, hisuser, hisvis);
 								refidp = refid;
 								while (refidp < refide) {  // for every referenced node
 									if (!global_dropbrokenrefs || hash_geti(0, *refidp))
@@ -11486,7 +11605,7 @@ static int oo_main() {
 									// write a node as a replacement for the relation
 									wo_node(id_new,
 										hisver, histime, hiscset, hisuid, hisuser,
-										posi_xy[0], posi_xy[1]);
+										posi_xy[0], posi_xy[1], hisvis);
 									if (global_add)
 										wo_addbboxtags(true,
 										posi_xy[2], posi_xy[3], posi_xy[4], posi_xy[5]);
@@ -11564,11 +11683,11 @@ static int oo_main() {
 		int idx = 0;
 		/*if (global_outstatistics)
 		{
-			fi = stdout;
+		fi = stdout;
 		}
 		else
 		{
-			fi = stderr;
+		fi = stderr;
 		}*/
 
 		fprintf(stderr, "write to file : %s\n", global_statfile);
@@ -11582,10 +11701,14 @@ static int oo_main() {
 			float flen = (float)len;
 			char* nn = tagsKeyStats[idx];
 			fprintf(fi, "%s,%s,%"PRIi64", %f \n", tagsKeyStats[idx], tagsValStats[idx], statistics.statItems[idx].count, flen);
+			//fprintf(stderr, "%s,%s,%"PRIi64", %f \n", tagsKeyStats[idx], tagsValStats[idx], statistics.statItems[idx].count, flen);
 		}
 
 		fprintf(fi, "%s,%s,%"PRIi64", %f \n", "severalLangs", "*", statistics.severalLangs.count, (float)statistics.severalLangs.len);
 		fprintf(fi, "%s,%s,%"PRIi64", %f \n", "turnRestrict", "*", statistics.turnRestrict.count, (float)statistics.turnRestrict.len);
+		fprintf(fi, "%s,%s,%"PRIi64", %f \n", "newObjects", "*", statistics.newObjects.count, (float)statistics.newObjects.len);
+		fprintf(fi, "%s,%s,%"PRIi64", %f \n", "modifiedObjects", "*", statistics.modifiedObjects.count, (float)statistics.modifiedObjects.len);
+		fprintf(fi, "%s,%s,%"PRIi64", %f \n", "deletedObjects", "*", statistics.deletedObjects.count, (float)statistics.deletedObjects.len);
 
 
 		//if (statistics.timestamp_min != 0) {
@@ -12135,7 +12258,7 @@ static bool assistant(int* argcp, char*** argvp) {
 		DD(talk_section)
 			for (;;) {
 #define D(s) DI(s) \
-			        while(strchr(s,',')!=NULL) *strchr(s,',')= '.'; \
+				        while(strchr(s,',')!=NULL) *strchr(s,',')= '.'; \
         if(s[0]==0 || s[strspn(s,"0123456789.-")]!=0) { \
           DD(talk_cannot_understand) continue; }
 				DD(talk_coordinates)
@@ -12563,6 +12686,11 @@ int main(int argc, char** argv) {
 		if ((l = strzlcmp(a, "--stat-timestamp=")) > 0 && a[l] != 0) {
 			// user-defined file timestamp
 			global_stat_timestamp = oo__strtimetosint64(a + l);
+			continue;  // take next parameter
+		}
+		if ((l = strzlcmp(a, "--stat-timestamp-start=")) > 0 && a[l] != 0) {
+			// user-defined file timestamp
+			global_stat_timestamp_start = oo__strtimetosint64(a + l);
 			continue;  // take next parameter
 		}
 		if (strcmp(a, "--out-timestamp") == 0) {

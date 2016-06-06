@@ -195,7 +195,6 @@ if __name__ == '__main__':
 
             if args.extractsReady == None:
                 spatPoly = GDALWorker.CreatePolyFile(shpBoundFilename, countryName)
-
                 th = multiprocessing.Process(target=ConvertFile, args=(countryName, args.history, postfix, spatPoly, True))
                 th.start()
                 threads.append(th)
