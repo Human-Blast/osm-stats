@@ -45,10 +45,15 @@ def RemoveFromDatabase(countryShortName, year):
 
     conn = psycopg2.connect("postgres://xksrylseratnzb:MLlMNpKQXP-st8vNW3rj0JShmh@ec2-54-235-78-240.compute-1.amazonaws.com:5432/d8hhbphanhc0fd")
     cur = conn.cursor()    
-    if year != None and year != "":
-        cur.execute("DELETE from road_stats WHERE country_code=%s AND year=%s", [countryShortName, year])
+
+    if(countryShortName == "" or countryShortName == None):
+        cur.execute("DELETE from road_stats WHERE year=%s", [year])
     else:
-        cur.execute("DELETE from road_stats WHERE country_code=%s", [countryShortName])
+        if year != None and year != "":
+            cur.execute("DELETE from road_stats WHERE country_code=%s AND year=%s", [countryShortName, year])
+        else:
+            cur.execute("DELETE from road_stats WHERE country_code=%s", [countryShortName])
+
     conn.commit()
     cur.close()
     conn.close()
