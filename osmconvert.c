@@ -9887,7 +9887,6 @@ static int oo_main() {
 	bool isHasSeveralLangs = false;
 	bool isDeletedWay = false;
 	int64_t objectCreateDate = 0;
-	bool isHighway = false;
 
 	double lenMiles = 0;
 
@@ -11042,14 +11041,16 @@ static int oo_main() {
 							// Dump statistic for way
 							//
 
-							if (isDeletedWay)
+							if (isDeletedWay && stateItemsCount > 0)
 							{
-								statistics.deletedObjects.count++;
-								statistics.deletedObjects.len += lenMiles;
+								if (lenMiles != 0){
+									statistics.deletedObjects.count++;
+									statistics.deletedObjects.len += lenMiles;
+								}
 							}
 							else
 							{								
-								if (isHighway)
+								if (stateItemsCount > 0)
 								{
 									if (global_stat_timestamp_start != 0)
 									{
@@ -11087,10 +11088,13 @@ static int oo_main() {
 								}
 							}
 
-							isDeletedWay = false;
-							objectCreateDate = 0;
 							// Save length
 							posi_set(id + global_otypeoffset10, (int)(lenMiles * 1000), 0);
+
+							// Reset parameters
+							isDeletedWay = false;
+							objectCreateDate = 0;
+							lenMiles = 0;
 						}
 
 						prevWayId = id;
@@ -11110,7 +11114,6 @@ static int oo_main() {
 
 						isDeletedWay = false;
 						isHasSeveralLangs = false;
-						isHighway = false;
 
 						double lon1 = 0;
 						double lat1 = 0;
@@ -11167,11 +11170,6 @@ static int oo_main() {
 										stateItemsCount++;
 									}
 								}
-							}
-
-							if (strcmp(k, "highway") == 0)
-							{
-								isHighway = true;
 							}
 
 							if (strncmp(k, "name:", 5) == 0)
