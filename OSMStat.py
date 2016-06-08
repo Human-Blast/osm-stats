@@ -126,6 +126,7 @@ if __name__ == '__main__':
     parser.add_argument("-extractsOnly")
     parser.add_argument("-date")
     parser.add_argument("-world")
+    parser.add_argument("-threadCountExtract")
     parser.add_argument("-threadCountStat")
     args = parser.parse_args(sys.argv[1:])
 
@@ -188,6 +189,14 @@ if __name__ == '__main__':
     historyConvertFiles = {}
     if args.history != None and args.history != "":
         threadCount = 6
+
+        if(args.threadCountExtract != None):
+            threadCount = int(args.threadCountExtract)
+
+        print "=============================="
+        print "Thread count for extract: ", threadCount
+        print "=============================="
+
         threads = []
 
         for countryName in countryNames:
