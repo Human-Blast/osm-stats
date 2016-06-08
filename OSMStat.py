@@ -126,6 +126,7 @@ if __name__ == '__main__':
     parser.add_argument("-extractsOnly")
     parser.add_argument("-date")
     parser.add_argument("-world")
+    parser.add_argument("-threadCountStat")
     args = parser.parse_args(sys.argv[1:])
 
     if args.date != None:
@@ -242,6 +243,15 @@ if __name__ == '__main__':
 
     elif args.history != None:
 
+        enableThreading = (len(countryNames) >= 3)
+        threadCount = 7
+        if(args.threadCountStat != None):
+            threadCount = int(args.threadCountStat)
+
+        print "=============================="
+        print "Thread count for statistic: ", threadCount
+        print "=============================="
+
         for i in range(0, countOfWeeks):
             
             # Create CSVs
@@ -262,8 +272,6 @@ if __name__ == '__main__':
 
             startTimeDate = datetime.datetime.now()
 
-            enableThreading = (len(countryNames) >= 3)
-            threadCount = 7
             threads = []
 
             for countryName in countryNames:
@@ -299,6 +307,7 @@ if __name__ == '__main__':
                     th.join()
                     if th.exitcode != 0:
                         raise "Extract process failed"
+                threads = []
 
             if args.db == "true":
                 print "Write to database"

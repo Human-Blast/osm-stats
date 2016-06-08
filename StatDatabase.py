@@ -29,8 +29,9 @@ def GetStatisticFromFile(filename):
 
                 dateStr = str(row[0])
                 date = datetime.datetime.strptime(dateStr, "%d %B %Y").date()
-                statItem.Year = date.year
-                statItem.Week = date.isocalendar()[1];
+                isoDate = date.isocalendar()
+                statItem.Year = isoDate[0]
+                statItem.Week = isoDate[1]
                 statItem.Country = str(row[1])
                 statItem.Kind = str(row[2])
                 statItem.Count = int(row[3])
