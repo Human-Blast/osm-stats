@@ -1,5 +1,5 @@
 # OSM-stats
-A OSM-stats is phyton script that collect statistic about ways in OSM data.
+A OSM-stats is python script that collect statistic about ways in OSM data.
 
 To apply spatial filter by country script use predefined polygon from shapefile in folder "CountriesBounds".
 
@@ -52,16 +52,7 @@ python2.7 OSMStat.py -overpass true
 You will need install next dependence packages:
 
 ```sh
-sudo apt-get install python2.7 python2.7-dev
-```
-```sh
-sudo apt-get install gdal-bin
-```
-```sh
-sudo apt-get install python-gdal
-```
-```sh
-sudo apt-get install python-psycopg2
+sudo apt-get install python2.7 python2.7-dev gdal-bin python-gdal python-psycopg2
 ```
 
 To run script you will run command:
