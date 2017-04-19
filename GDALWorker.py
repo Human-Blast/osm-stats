@@ -107,7 +107,7 @@ def CreatePolyFile(shpBoundFilename, countryName):
                     for idx in range(0, pntsCount):
                         x = geomRing.GetX(idx)
                         y = geomRing.GetY(idx)
-                        pntStr = "{0:.4e} {1:.4e}\n".format(x, y)
+                        pntStr = "    {0:.4e} {1:.4e}\n".format(x, y)
                         fp.write(pntStr)
                     fp.write("END\n")
                 else:
@@ -119,8 +119,9 @@ def CreatePolyFile(shpBoundFilename, countryName):
                             raise "Found invalid geometry"
                         
                         area = geomSub.Area()
-                        if area < 0.5:
-                            continue #ignore small areas
+                        #if area < 0.5:
+                        #    print "skipping small area" #continue #ignore small areas
+                        #    continue #ignore small areas
 
                         fp.write(str(idxGeom + 1) + "\n")
 
