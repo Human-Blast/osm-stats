@@ -1,5 +1,5 @@
 # OSM-stats
-A OSM-stats is python script that collect statistic about ways in OSM data. It's output is at http://osm-stats.stevecoast.com/
+A OSM-stats is python script that collect statistic about ways in OSM data. It's output is at http://osmstats.stevecoast.com/
 
 To apply spatial filter by country script use predefined polygon from shapefile in folder "CountriesBounds".
 
